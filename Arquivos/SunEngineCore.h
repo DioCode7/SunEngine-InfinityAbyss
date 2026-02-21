@@ -1,9 +1,14 @@
 #pragma once
 #include <string>
 #include <array>
+#include <iostream>
+#include <unordered_map>
 #include <vector>
 #include <SDL2/SDL.h>
-#include <GL/gl.h>
+
+
+
+
 
 struct SunCoreData {
     unsigned int VAO;
@@ -11,9 +16,17 @@ struct SunCoreData {
     unsigned int ShaderProgram;
 };
 
+enum class SceneState{
+  OnLoad,
+  OnInit,
+  OnUpdate
+};
+
 class Scene{
 
     public:
+    std::string SceneID;
+    SceneState State;
   virtual void SceneConfigs();
   virtual void OnLoad();
   virtual void OnInit();
@@ -21,6 +34,8 @@ class Scene{
    virtual ~Scene() = default;
 
 };
+
+
 
 
 
@@ -68,6 +83,38 @@ class SunEngineConfig{
         Scene SceneClass;
 };
 
+class Texture{
+    public:
+    std::string Id;
+    GLuint GPUID;
+    int Width;
+    int Height;
+
+  
+};
+
+class RenderCore{
+    public:
+    std::unordered_map<std::string,Texture> Textures;
+    Texture* GetTexture(std::string Id){
+      auto it = Textures.find(Id);
+      if(it != Textures.end()){
+        return &it->second;
+      }
+      return nullptr;
+    }
+    std::unordered_map<std::string,RenderComponentClass*> Sprites;
+    void AddTexture(const std::string& Id,const Texture& Tex){
+      if(Textures.count(Id)){
+        std::cout << "Texture Ja Existe";
+      } 
+      else{
+        Textures.emplace(Id,Tex);
+      }
+    }
+    
+};
+
 class SunCore {
     private:
     SunCore() {};
@@ -77,10 +124,10 @@ class SunCore {
     int WindowWidth;
     int WindowHeight;
     SDL_GLContext GlContext;
-    std::vector<Scene*> RunningScenes;
+    std::unordered_map<std::string,Scene*> ScenesDiagrams;
     SunEngineConfig* SunEngineConfig;
-
     SunCoreData Gl;
+    RenderCore SunRenderCore;
     
 
     static SunCore& instance(){

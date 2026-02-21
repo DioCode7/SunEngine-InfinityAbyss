@@ -69,10 +69,14 @@ void WindowManipulate(const std::string ManipulateType){
                  GLint uPosLoc = glGetUniformLocation(Shader,"uPos");
                   GLint uSizeLoc = glGetUniformLocation(Shader,"uSize");
                   GLint uColorLoc = glGetUniformLocation(Shader,"uColor");
+                    GLint uShapeType = glGetUniformLocation(Shader,"ShapeType");
+                    GLint uUseTexture = glGetUniformLocation(Shader,"uUseTexture");
 
                   glUniform2f(uPosLoc,PosX,PosY);
                   glUniform2f(uSizeLoc,SizeX,SizeY);
                   glUniform4f(uColorLoc,R,G,B,A);
+                  glUniform1i(uShapeType,0);
+                  glUniform1i(uUseTexture,0);
 
                 
                 glDrawArrays(GL_TRIANGLE_FAN,0,4);
@@ -88,6 +92,47 @@ void WindowManipulate(const std::string ManipulateType){
               
         };
 
+class RenderComponentCircle : public RenderComponentClass{
+    public:
+       RenderComponentCircle(int Radius,int PosX,int PosY,int R,int G,int B,int A,std::string Id,Scene* OwnerScene) :
+        RenderComponentClass(PosX,PosY,Radius * 2,Radius * 2,R,G,B,A,Id,OwnerScene){}
+
+        void RenderMethod(float X,float Y,float W, float H, float R, float G,float B,float A) override {
+         GLuint Shader = SunCore::instance().Gl.ShaderProgram;
+
+                float PosX = (((X / SunCore::instance().WindowWidth)*2.0f)-1.0f) + (W / SunCore::instance().WindowWidth) / 2.0f;
+                float PosY = 0.0f - (((Y / SunCore::instance().WindowHeight)*2.0f)-1.0f) - (H / SunCore::instance().WindowHeight) / 2.0f;
+
+                float SizeX = (W / SunCore::instance().WindowWidth) * 2.0f;
+                float SizeY = (H / SunCore::instance().WindowHeight) * 2.0f;
+
+
+
+                glUseProgram(Shader);
+
+           
+                glBindVertexArray(SunCore::instance().Gl.VAO);
+
+                 GLint uPosLoc = glGetUniformLocation(Shader,"uPos");
+                  GLint uSizeLoc = glGetUniformLocation(Shader,"uSize");
+                  GLint uColorLoc = glGetUniformLocation(Shader,"uColor");
+                    GLint uShapeType = glGetUniformLocation(Shader,"ShapeType");
+                     GLint uUseTexture = glGetUniformLocation(Shader,"uUseTexture");
+
+                  glUniform2f(uPosLoc,PosX,PosY);
+                  glUniform2f(uSizeLoc,SizeX,SizeY);
+                  glUniform4f(uColorLoc,R,G,B,A);
+                  glUniform1i(uShapeType,1);
+                    glUniform1i(uUseTexture,0);
+
+                
+                glDrawArrays(GL_TRIANGLE_FAN,0,4);
+
+
+
+ 
+        }
+};
 
 
       
@@ -105,6 +150,10 @@ void WindowManipulate(const std::string ManipulateType){
 
         };
     
+ void SunRender::AddCircle(std::string Id, float PosX, float PosY,float Radius,float R,float G,float B,float A,Scene* OwnerScene){
+    RenderComponentCircle* Rc = new RenderComponentCircle(Radius,PosX,PosY,R,G,B,A,Id,OwnerScene);
+    SunCore::instance().SunEngineConfig->Render.RenderVector.push_back(Rc);
+ }        
      
       
 
@@ -119,10 +168,28 @@ void WindowManipulate(const std::string ManipulateType){
 void RunScene(Scene* RequestScene){
 
     
+    RequestScene->State = SceneState::OnLoad;
+    SunCore::instance().ScenesDiagrams.emplace(RequestScene->SceneID,RequestScene);
+   
+     
 
-    RequestScene->OnInit();
+}
 
+void ScenesLoop(){
+ for(const auto& pair : SunCore::instance().ScenesDiagrams){
+    Scene* SceneDiagram = pair.second; 
+  
 
-    SunCore::instance().RunningScenes.push_back(RequestScene); 
+  if(SceneDiagram->State == SceneState::OnLoad){
+    SceneDiagram->OnLoad();
+    SceneDiagram->State = SceneState::OnInit;
+  }
+  else if(SceneDiagram->State == SceneState::OnInit){
+    SceneDiagram->OnInit();
+    SceneDiagram->State = SceneState::OnUpdate;
 
+}else if(SceneDiagram->State == SceneState::OnUpdate){
+   SceneDiagram->OnUpdate();
+}
+ }
 }
