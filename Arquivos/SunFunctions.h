@@ -5,6 +5,7 @@
     public:
    void AddRectangle(std::string Id,float PosX,float PosY,float Width,float Height,float R,float G,float B,float A,Scene* OwnerScene);
     void AddCircle(std::string Id, float PosX, float PosY,float Radius,float R,float G,float B,float A,Scene* OwnerScene);
+void AddSprite(Component* ComponentClass,Scene* OwnerScene,Component* Parent = nullptr);
 };
 void WindowManipulate(const std::string ManipulateType);
 

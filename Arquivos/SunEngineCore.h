@@ -21,6 +21,51 @@ enum class SceneState{
   OnInit,
   OnUpdate
 };
+enum class UnitType{
+Percent,
+Pixel
+};
+class UnitClass{
+   public:
+UnitType Unit;
+float Value;
+float ValueResolved;
+};
+
+class NodeClass;
+
+class Component{
+  public:
+  Component(std::string Id,UnitClass W,UnitClass H,UnitClass X,UnitClass Y,std::string Texture):Id(Id),Width(W),Height(H),PosX(X),PosY(Y),Texture(Texture){}
+  std::string Id;
+  std::string Texture;
+   UnitClass Width;
+   UnitClass Height;
+   UnitClass PosX;
+   UnitClass PosY;
+   NodeClass* Owner = nullptr;
+
+  
+
+};
+
+class NodeClass{
+  public:
+  NodeClass(){};
+ Component* ComponentClass;
+ NodeClass* Parent = nullptr;
+ 
+ std::vector<NodeClass*> Childrens;
+ std::vector<Component*> Components;
+
+ void AddChild(NodeClass* Node){
+  Childrens.push_back(Node);
+ };
+ 
+ void AddComponent(Component* Node){
+  Components.push_back(Node);
+ }
+};
 
 class Scene{
 
@@ -49,14 +94,16 @@ class RenderComponentClass{
 float G;
 float B;
 float A;
+std::string TextureId;
 
     Scene* OwnerScene;
     std::string Id;
-       RenderComponentClass(int PosX,int PosY,int W,int H, float R,float G,float B,float A,std::string Id,Scene* OwnerScene):
-      X(PosX),Y(PosY),Width(W),Height(H),R(R),G(G),B(B),A(A){}
+       RenderComponentClass(int PosX,int PosY,int W,int H, float R,float G,float B,float A,std::string Id,Scene* OwnerScene,
+      std::string TextureId = "None"):
+      X(PosX),Y(PosY),Width(W),Height(H),R(R),G(G),B(B),A(A),Id(Id),OwnerScene(OwnerScene),TextureId(TextureId){}
  
        
-   virtual void RenderMethod(float X,float Y,float W,float H,float R,float G,float B,float A) =0;
+   virtual void RenderMethod(float X,float Y,float W,float H,float R,float G,float B,float A,std::string Texture = "None") =0;
 
 };
 

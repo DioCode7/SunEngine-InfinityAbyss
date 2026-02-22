@@ -42,7 +42,7 @@ void EngineRender(){
 
    for (auto* rc : SunCore::instance().SunEngineConfig->Render.RenderVector) {
 
-    rc->RenderMethod(rc->X,rc->Y,rc->Width,rc->Height,rc->R,rc->G,rc->B,rc->A);
+    rc->RenderMethod(rc->X,rc->Y,rc->Width,rc->Height,rc->R,rc->G,rc->B,rc->A,rc->TextureId);
     
 }
 
@@ -122,19 +122,24 @@ void Renderer::LoadShaders(SunEngineConfig& Config){
                 const char* FragmentShaderSource = R"(
                 #version 330 core
                 in vec2 vLocalPos;
-                in vec2 aUV;
+                in vec2 vUV;
                 out vec4 FragColor;
                 
                 uniform vec4 uColor;
                 uniform int ShapeType;
                 uniform int uUseTexture;
                 uniform sampler2D uTexture;
+                uniform int uFlipY; 
+                uniform int uFlipX; 
 
                 void main(){
 
+                vec2 Uv = vUV;
                 vec4 uBaseColor = uColor;
                 if(uUseTexture == 1){
-                uBaseColor *= texture(uTexture,aUV);
+                if(uFlipY == 1) Uv.y = 1.0 - Uv.y;
+                if(uFlipX == 1) Uv.x = 1.0 - Uv.x;
+                uBaseColor *= texture(uTexture,Uv);
                 }
                
                 int uShapeType = ShapeType;
