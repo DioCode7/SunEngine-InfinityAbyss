@@ -16,6 +16,7 @@ void SunEngineGameLoop(){
    while(SunCore::instance().ApplicationState == "Running"){
 
     SunDispatchs();
+    SunUpdateInput();
     EngineRender();
     ScenesLoop();
     

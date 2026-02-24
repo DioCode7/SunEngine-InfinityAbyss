@@ -33,30 +33,15 @@ void CreateMainWindow(SunEngineConfig& Config){
 }
 
 void EngineRender(){
-
-
-
     glClearColor(0, 0, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
-
-
-   for (auto* rc : SunCore::instance().SunEngineConfig->Render.RenderVector) {
-
-    rc->RenderMethod(rc->X,rc->Y,rc->Width,rc->Height,rc->R,rc->G,rc->B,rc->A,rc->TextureId);
-    
+   for (auto& rc : SunCore::instance().SunEngineConfig->Render.RenderVector) {
+   rc->OriginalComponent->ResolveComponent();
+   std::cout << "Render" << rc->X << "Render//";
+    rc->RenderMethod(rc->X,rc->Y,rc->Width,rc->Height,rc->R,rc->G,rc->B,rc->A,rc->TextureId);   
 }
-
-
-
-
-
-
-    
     SDL_GL_SwapWindow(SunCore::instance().window);
-
     SDL_Delay(1);
-
-
     }
 
 void Renderer::InitSDLContext(SunEngineConfig& Config){
@@ -190,6 +175,19 @@ void Renderer::LoadShaders(SunEngineConfig& Config){
                 SunCore::instance().Gl.VAO = VAO;
                SunCore::instance().Gl.VBO = VBO;
                SunCore::instance().Gl.ShaderProgram = ShaderProgram;
+                
+       
+
+                SunCore::instance().Gl.UniformsLocations.uPosLoc = glGetUniformLocation(ShaderProgram,"uPos");
+                   SunCore::instance().Gl.UniformsLocations.uSizeLoc= glGetUniformLocation(ShaderProgram,"uSize");
+                   SunCore::instance().Gl.UniformsLocations.uColorLoc = glGetUniformLocation(ShaderProgram,"uColor");
+                     SunCore::instance().Gl.UniformsLocations.uShapeType = glGetUniformLocation(ShaderProgram,"ShapeType");
+                    SunCore::instance().Gl.UniformsLocations.uUseTexture = glGetUniformLocation(ShaderProgram,"uUseTexture");
+                     SunCore::instance().Gl.UniformsLocations.uTexture = glGetUniformLocation(ShaderProgram,"uTexture");
+                     SunCore::instance().Gl.UniformsLocations.uFlipY = glGetUniformLocation(ShaderProgram,"uFlipY");
+                      SunCore::instance().Gl.UniformsLocations.uFlipX = glGetUniformLocation(ShaderProgram,"uFlipX");
+
+                     
                 
 
    
