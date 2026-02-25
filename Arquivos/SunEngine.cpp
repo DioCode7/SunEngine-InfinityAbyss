@@ -10,6 +10,8 @@
 #include "SunFunctions.h"
 #include "SunImages.h"
 
+auto& Core = SunCore::instance();
+
 
 void SunEngineGameLoop(){
 
@@ -19,7 +21,7 @@ void SunEngineGameLoop(){
     SunUpdateInput();
     EngineRender();
     ScenesLoop();
-    
+   Core.BodysControl.Update();
 
    };
 

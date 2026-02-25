@@ -32,13 +32,69 @@ void CreateMainWindow(SunEngineConfig& Config){
         }
 }
 
+
+void RenderDebug(){
+   for(SunBodys* SunBody : SunCore::instance().BodysControl.GetSunBodysVector()){
+        for(auto& Body:SunBody->GetBodysMap()){
+         if(!Body.second->GetBodyComponent()){
+        Body.second->CreateBodyComponent();
+         }else{
+         Component* BodyComponent = Body.second->GetBodyComponent();
+         BodyComponent->ResolveComponent();
+         RenderComponentClass* rc = BodyComponent->GetRenderComponent();
+         rc->RenderMethod(
+            rc->X,
+            rc->Y,
+            rc->Width,
+            rc->Height,
+            rc->R,
+            rc->G,
+            rc->B,
+            rc->A,
+            rc->BorderWidth,
+            rc->TextureId
+         );
+
+        }
+    }
+    };
+      for(auto& SunBody : SunCore::instance().SunWorld.GetStaticBodysMap()){
+        for(auto& Body:SunBody.second.get()->GetBodysMap()){
+         if(!Body.second->GetBodyComponent()){
+        Body.second->CreateBodyComponent();
+         }else{
+         Component* BodyComponent = Body.second->GetBodyComponent();
+         BodyComponent->ResolveComponent();
+         RenderComponentClass* rc = BodyComponent->GetRenderComponent();
+         rc->RenderMethod(
+            rc->X,
+            rc->Y,
+            rc->Width,
+            rc->Height,
+            rc->R,
+            rc->G,
+            rc->B,
+            rc->A,
+            rc->BorderWidth,
+            rc->TextureId
+         );
+
+        }
+    }
+    }
+}
+
 void EngineRender(){
     glClearColor(0, 0, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
    for (auto& rc : SunCore::instance().SunEngineConfig->Render.RenderVector) {
    rc->OriginalComponent->ResolveComponent();
-   std::cout << "Render" << rc->X << "Render//";
-    rc->RenderMethod(rc->X,rc->Y,rc->Width,rc->Height,rc->R,rc->G,rc->B,rc->A,rc->TextureId);   
+    rc->RenderMethod(rc->X,rc->Y,rc->Width,rc->Height,rc->R,rc->G,rc->B,rc->A,rc->BorderWidth,rc->TextureId);   
+
+}
+
+if(SunCore::instance().SunEngineConfig->BodysDebug){
+ RenderDebug();
 }
     SDL_GL_SwapWindow(SunCore::instance().window);
     SDL_Delay(1);
@@ -75,6 +131,9 @@ void Renderer::LoadShaders(SunEngineConfig& Config){
 
                 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
             glEnableVertexAttribArray(0);
+
+            glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
                 const char* VertexShaderSource = R"(
                 #version 330 core
@@ -116,6 +175,8 @@ void Renderer::LoadShaders(SunEngineConfig& Config){
                 uniform sampler2D uTexture;
                 uniform int uFlipY; 
                 uniform int uFlipX; 
+                uniform vec2 uBorderWidth;
+                uniform vec4 uBorderColor;
 
                 void main(){
 
@@ -129,7 +190,20 @@ void Renderer::LoadShaders(SunEngineConfig& Config){
                
                 int uShapeType = ShapeType;
                 if(uShapeType == 0){
-                FragColor = uBaseColor; 
+               float borderX = uBorderWidth.x;
+                    float borderY = uBorderWidth.y;
+
+                    bool isBorder =
+                        vUV.x < borderX ||
+                        vUV.x > 1.0 - borderX ||
+                        vUV.y < borderY ||
+                        vUV.y > 1.0 - borderY;
+
+                    if(isBorder){
+                        FragColor = uBorderColor;
+                    }else{
+                        FragColor = uBaseColor;
+                    }
                }else if(uShapeType == 1){
                  float dist = length(vLocalPos);
                  if(dist > 0.5) discard;
@@ -186,6 +260,9 @@ void Renderer::LoadShaders(SunEngineConfig& Config){
                      SunCore::instance().Gl.UniformsLocations.uTexture = glGetUniformLocation(ShaderProgram,"uTexture");
                      SunCore::instance().Gl.UniformsLocations.uFlipY = glGetUniformLocation(ShaderProgram,"uFlipY");
                       SunCore::instance().Gl.UniformsLocations.uFlipX = glGetUniformLocation(ShaderProgram,"uFlipX");
+                         SunCore::instance().Gl.UniformsLocations.uBorderWidth = glGetUniformLocation(ShaderProgram,"uBorderWidth");
+                     SunCore::instance().Gl.UniformsLocations.uBorderColor = glGetUniformLocation(ShaderProgram,"uBorderColor");
+
 
                      
                 

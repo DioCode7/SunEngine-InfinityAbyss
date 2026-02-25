@@ -41,6 +41,8 @@
   }
  };
 
+
+
  
  
 
@@ -91,9 +93,19 @@ int main(int argc, char** argv)
             
             Component* TestRectangle = new Component("TestRectangle",TestRectangleW,TestRectangleH,TestRectangleX,TestRectangleY);
            TestRectangle->SetRGBA(1.0f,0.0f,0.0f,1.0f);
-           /*
+           BorderClass TestRectangleBorder;
+           UnitClass TestRectangleBorderW;
+            TestRectangleBorderW.Unit = UnitType::Pixel;
+            TestRectangleBorderW.Value = 5.0f;
+            TestRectangleBorder.R = 0.0f;
+            TestRectangleBorder.G = 1.0f;
+            TestRectangleBorder.B = 0.0f;
+            TestRectangleBorder.A = 1.0f;
+            TestRectangleBorder.Use = true;
+            TestRectangleBorder.Width = TestRectangleBorderW;
+            TestRectangle->SetBorder(TestRectangleBorder);
             SunRendering.AddRectangle(TestRectangle,this);
-            */
+            
 
              UnitClass TestCircleW;
             TestCircleW.Unit = UnitType::Pixel;
@@ -158,11 +170,11 @@ int main(int argc, char** argv)
      
 
      UnitClass PlayerW;
-     PlayerW.Unit = UnitType::Percent;
-     PlayerW.Value = 0.07f;
+     PlayerW.Unit = UnitType::Pixel;
+     PlayerW.Value = 70.0f;
      UnitClass PlayerH;
-     PlayerH.Unit = UnitType::Percent;
-     PlayerH.Value = 0.15f;
+     PlayerH.Unit = UnitType::Pixel;
+     PlayerH.Value = 120.0f;
      UnitClass PlayerX;
      PlayerX.Unit = UnitType::Pixel;
      PlayerX.Value = 1.0f;
@@ -170,13 +182,16 @@ int main(int argc, char** argv)
      PlayerY.Unit = UnitType::Pixel;
      PlayerY.Value = 1.0f;
      OriginClass PlayerOriginX;
-     PlayerOriginX = OriginClass::Center;
+     PlayerOriginX = OriginClass::Start;
      OriginClass PlayerOriginY;
-     PlayerOriginY = OriginClass::Center;
-     Component* DioComponent = new Component("DioComponent",PlayerW,PlayerH,PlayerX,PlayerY,PlayerOriginX,PlayerOriginY);
-     DioComponent->SetTexture("DioTesteTexture");
+     PlayerOriginY = OriginClass::Start;
+     std::unique_ptr<Component> DioComponentUnique = 
+    std::make_unique<Component>("DioComponent", PlayerW, PlayerH, PlayerX, PlayerY,PlayerOriginX,PlayerOriginY);
+     DioComponentUnique->SetTexture("DioTesteTexture");
       
-     SunRendering.AddSprite(DioComponent,this);
+     SunRendering.AddSprite(std::move(DioComponentUnique),this);
+    auto* DioComponent = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get();
+     
  
       
      PlayerAttributesClass DioAttributes;
@@ -282,9 +297,24 @@ Dio->Abilities.push_back(std::make_unique<MoveLeft>());
      SunListenersControl.AddListener(std::move(DioMoveUpListener));
 
    
-     
+     auto DioBody = std::make_unique<SunBodys>();
+     auto DioMainBody = std::make_unique<Body>();
+     DioMainBody->Height = 120.0f;
+     DioMainBody->Width = 70.0f;
+     DioMainBody->OffsetX = 0;
+     DioMainBody->OffsetY = 0;
+     DioBody->AddBody("DioMainBody",std::move(DioMainBody));
+     Dio->PlayerComponent->AddBody(std::move(DioBody));
      
 
+      auto TestStaticBody = std::make_unique<SunBodys>();
+     auto TestStaticMainBody = std::make_unique<Body>();
+     TestStaticMainBody->Height = 300.0f;
+     TestStaticMainBody->Width = 140.0f;
+     TestStaticMainBody->OffsetX = 500.0f;
+     TestStaticMainBody->OffsetY = 600.0f;
+     TestStaticBody->AddBody("TestStaticBody",std::move(TestStaticMainBody));
+     TestStaticBody->CreateStaticBody("TestRectangleBody",std::move(TestStaticBody));
 
     };
     void OnUpdate() override{
@@ -298,6 +328,7 @@ Dio->Abilities.push_back(std::make_unique<MoveLeft>());
    InfinityAbyssConfig.Window.WindowName = "Infinity Abyss";
    MenuScene* Menu = new MenuScene();
    InfinityAbyssConfig.SunScenes.Scenes = {Menu};
+   InfinityAbyssConfig.BodysDebug =true;
    
     
     
