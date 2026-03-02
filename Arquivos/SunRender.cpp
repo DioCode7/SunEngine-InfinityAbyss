@@ -42,18 +42,7 @@ void RenderDebug(){
          Component* BodyComponent = Body.second->GetBodyComponent();
          BodyComponent->ResolveComponent();
          RenderComponentClass* rc = BodyComponent->GetRenderComponent();
-         rc->RenderMethod(
-            rc->X,
-            rc->Y,
-            rc->Width,
-            rc->Height,
-            rc->R,
-            rc->G,
-            rc->B,
-            rc->A,
-            rc->BorderWidth,
-            rc->TextureId
-         );
+         rc->RenderMethod();
 
         }
     }
@@ -66,18 +55,7 @@ void RenderDebug(){
          Component* BodyComponent = Body.second->GetBodyComponent();
          BodyComponent->ResolveComponent();
          RenderComponentClass* rc = BodyComponent->GetRenderComponent();
-         rc->RenderMethod(
-            rc->X,
-            rc->Y,
-            rc->Width,
-            rc->Height,
-            rc->R,
-            rc->G,
-            rc->B,
-            rc->A,
-            rc->BorderWidth,
-            rc->TextureId
-         );
+         rc->RenderMethod();
 
         }
     }
@@ -89,13 +67,14 @@ void EngineRender(){
     glClear(GL_COLOR_BUFFER_BIT);
    for (auto& rc : SunCore::instance().SunEngineConfig->Render.RenderVector) {
    rc->OriginalComponent->ResolveComponent();
-    rc->RenderMethod(rc->X,rc->Y,rc->Width,rc->Height,rc->R,rc->G,rc->B,rc->A,rc->BorderWidth,rc->TextureId);   
+    rc->RenderMethod();   
+   }
 
-}
 
 if(SunCore::instance().SunEngineConfig->BodysDebug){
  RenderDebug();
 }
+
     SDL_GL_SwapWindow(SunCore::instance().window);
     SDL_Delay(1);
     }
@@ -109,6 +88,47 @@ SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
      CreateMainWindow(Config);
 }
 
+
+GLuint CreateShaderProgram(const char* Vs,const char* Fs){
+unsigned int VertexShader = glCreateShader(GL_VERTEX_SHADER);
+                glShaderSource(VertexShader,1,&Vs,NULL);
+                glCompileShader(VertexShader);
+
+                int Success;
+                char InfoLog[512];
+                glGetShaderiv(VertexShader,GL_COMPILE_STATUS, &Success);
+                if(!Success){
+                    glGetShaderInfoLog(VertexShader,512,NULL,InfoLog);
+                  
+                }
+
+                unsigned int FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+                glShaderSource(FragmentShader,1,&Fs,NULL);
+                glCompileShader(FragmentShader);
+
+                   glGetShaderiv(FragmentShader,GL_COMPILE_STATUS, &Success);
+                if(!Success){
+                    glGetShaderInfoLog(FragmentShader,512,NULL,InfoLog);
+                  
+                };
+
+                  unsigned int ShaderProgram = glCreateProgram();
+                glAttachShader(ShaderProgram,VertexShader);
+                glAttachShader(ShaderProgram,FragmentShader);
+
+                glLinkProgram(ShaderProgram);
+                glGetProgramiv(ShaderProgram,GL_LINK_STATUS,&Success);
+                if(!Success){
+                    glGetProgramInfoLog(ShaderProgram,512,NULL,InfoLog);
+                }
+
+                return ShaderProgram;
+
+
+};
+
+
+
 void Renderer::LoadShaders(SunEngineConfig& Config){
      float vertices[] = {
      -0.5f,-0.5f,0.0f,  0.0f,0.0f,
@@ -116,7 +136,7 @@ void Renderer::LoadShaders(SunEngineConfig& Config){
      0.5f, 0.5f,0.0f,   1.0f,1.0f,
     -0.5f, 0.5f,0.0f,   0.0f,1.0f
                 };
-                unsigned int VBO,VAO;
+                unsigned int VBO,VAO,TextVBO,TextVAO;
                 
                 glGenVertexArrays(1,&VAO);
                 glGenBuffers(1,&VBO);
@@ -214,41 +234,71 @@ void Renderer::LoadShaders(SunEngineConfig& Config){
                 }
                 )";
 
-                unsigned int VertexShader = glCreateShader(GL_VERTEX_SHADER);
-                glShaderSource(VertexShader,1,&VertexShaderSource,NULL);
-                glCompileShader(VertexShader);
+                 GLuint ShaderProgram = CreateShaderProgram(VertexShaderSource,FragmentShaderSource);
+                   glGenVertexArrays(1,&TextVAO);
+                glGenBuffers(1,&TextVBO);
+                                glBindVertexArray(TextVAO);
+                    glBindBuffer(GL_ARRAY_BUFFER, TextVBO);
 
-                int Success;
-                char InfoLog[512];
-                glGetShaderiv(VertexShader,GL_COMPILE_STATUS, &Success);
-                if(!Success){
-                    glGetShaderInfoLog(VertexShader,512,NULL,InfoLog);
-                  
+                    glBufferData(GL_ARRAY_BUFFER,
+                                6 * 5 * sizeof(float),
+                                NULL,
+                                GL_DYNAMIC_DRAW);
+
+                    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
+                    glEnableVertexAttribArray(0);
+
+                    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
+                    glEnableVertexAttribArray(1);
+
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
+                    glBindVertexArray(0);
+                
+
+                 const char* TextVertexShaderSource = R"(
+                        #version 330 core
+
+                layout (location = 0) in vec3 aPos;
+                layout (location = 1) in vec2 aUV;
+
+                out vec2 vUV;
+
+                uniform mat4 projection;   
+
+                void main()
+                {
+                    gl_Position = projection * vec4(aPos.xy, 0.0, 1.0);
+                    vUV = aUV;
                 }
 
-                unsigned int FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-                glShaderSource(FragmentShader,1,&FragmentShaderSource,NULL);
-                glCompileShader(FragmentShader);
+                )";
 
-                   glGetShaderiv(FragmentShader,GL_COMPILE_STATUS, &Success);
-                if(!Success){
-                    glGetShaderInfoLog(FragmentShader,512,NULL,InfoLog);
-                  
-                };
+                const char* TextFragmentShaderSource = R"(
+                #version 330 core
+                in vec2 vUV;
+                out vec4 FragColor;
 
-                unsigned int ShaderProgram = glCreateProgram();
-                glAttachShader(ShaderProgram,VertexShader);
-                glAttachShader(ShaderProgram,FragmentShader);
+                uniform sampler2D uTexture;
+                uniform vec4 uColor;
 
-                glLinkProgram(ShaderProgram);
-                glGetProgramiv(ShaderProgram,GL_LINK_STATUS,&Success);
-                if(!Success){
-                    glGetProgramInfoLog(ShaderProgram,512,NULL,InfoLog);
+                void main(){
+                 float alpha = texture(uTexture, vUV).r;
+                 FragColor = vec4(uColor.rgb,uColor.a * alpha);
                 }
+                )";
+
+
+
+                 GLuint TextShaderProgram = CreateShaderProgram(TextVertexShaderSource,TextFragmentShaderSource);
+                  
              
                 SunCore::instance().Gl.VAO = VAO;
                SunCore::instance().Gl.VBO = VBO;
+               SunCore::instance().Gl.TextVBO = TextVBO;
+                SunCore::instance().Gl.TextVAO = TextVAO;
                SunCore::instance().Gl.ShaderProgram = ShaderProgram;
+                SunCore::instance().Gl.TextShader = TextShaderProgram;
+
                 
        
 
@@ -264,7 +314,11 @@ void Renderer::LoadShaders(SunEngineConfig& Config){
                      SunCore::instance().Gl.UniformsLocations.uBorderColor = glGetUniformLocation(ShaderProgram,"uBorderColor");
 
 
-                     
+                     SunCore::instance().Gl.TextUniformsLocations.uColor = glGetUniformLocation(TextShaderProgram,"uColor");
+                       SunCore::instance().Gl.TextUniformsLocations.uTexture = glGetUniformLocation(TextShaderProgram,"uTexture");
+                 SunCore::instance().Gl.TextUniformsLocations.ProjectionMatrix = glGetUniformLocation(TextShaderProgram,"projection");
+                  
+                
                 
 
    

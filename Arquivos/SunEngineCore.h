@@ -1,4 +1,6 @@
 #pragma once
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #include <string>
 #include <array>
 #include <iostream>
@@ -7,9 +9,112 @@
 #include <functional>
 #include <memory>
 #include <SDL2/SDL.h>
+#include <GL/glew.h>
+
+
+#include <chrono>
+
 
 class SunCore;
 
+
+struct vector2{
+  float x = 0.0f;
+  float y = 0.0f;
+};
+
+enum class Align{
+  Start,
+  Center,
+  End,
+  None
+};
+
+
+struct Character{
+ vector2 Size;
+ vector2 Bearing;
+ unsigned int Advance;
+ vector2 UvMin;
+ vector2 UvMax;
+};
+
+
+class SunFont{
+  private:
+  std::unordered_map<char,Character> Characters;
+  public:
+  GLuint AtlasTexture;
+  void AddToCaracters(char c,Character chra){
+      Characters.emplace(c,chra);
+  };
+  Character GetCharacter(char ch){
+   if(Characters.find(ch) != Characters.end()){
+   return Characters.find(ch)->second;
+   }else{
+    Character c;
+    return c;
+   }
+  };
+  std::string Id;
+  int Height;
+  const char* FontPath;
+  FT_Face Face;
+
+
+
+};
+
+enum class ComponentType{
+  Text,
+  Rectangle,
+  Circle,
+  Sprite
+};
+
+class SunFonts{
+private:
+std::unordered_map<std::string,std::unique_ptr<SunFont>> Fonts;
+public:
+void AddFontToWorld(std::string Id,std::unique_ptr<SunFont> Font){
+  Fonts.emplace(Id,std::move(Font));
+};
+SunFont* GetFont(std::string Id){
+ if(Fonts.find(Id) != Fonts.end()){
+   return Fonts.find(Id)->second.get();
+ }
+return nullptr;
+};
+
+};
+
+
+class SunTime{
+private:
+float DeltaTime = 0.0f;
+using Clock = std::chrono::high_resolution_clock;
+std::chrono::time_point<Clock> LastFrame;
+public:
+SunTime(){
+  LastFrame = Clock::now();
+};
+void TimeUpdate(){
+auto Now = Clock::now();
+std::chrono::duration<float> Elapsed = Now - LastFrame;
+DeltaTime = Elapsed.count();
+LastFrame = Now;
+
+};
+float GetDeltaTime()const{
+  return DeltaTime;
+};
+
+};
+
+enum class CollisionPhysicTypes{
+  Arcade,
+  SunPhysic,
+};
 
 
 class ShaderLocationsClass{
@@ -26,12 +131,25 @@ class ShaderLocationsClass{
   GLint uFlipX;
 };
 
+class TextShaderLocationsClass{
+  public:
+  GLint uTexture;
+  GLint uColor;
+  GLint uSize;
+  GLint ProjectionMatrix;
+  GLint uPos;
+};
+
 struct SunCoreData {
     unsigned int VAO;
+     unsigned int TextVAO;
     unsigned int VBO;
+    unsigned int TextVBO; 
     unsigned int ShaderProgram;
     ShaderLocationsClass UniformsLocations;
-
+    TextShaderLocationsClass TextUniformsLocations;
+    unsigned int TextShader;
+   
 };
 
 class SunEvent{
@@ -99,9 +217,11 @@ Percent,Pixel
 };
 class UnitClass{
    public:
-UnitType Unit;
+UnitType Unit = UnitType::Pixel;
 float Value = 0.0f;
+float ValuePixel = 0.0f;
 float ValueResolved = 0.0f;
+float RenderValue = 0.0f;
 };
 
 class Component;
@@ -156,6 +276,25 @@ class Scene{
 };
 
 
+class CollisionLayer{
+
+private:
+  std::unordered_map<std::string,CollisionLayer*> CollidesWith; 
+public:
+  std::string Id;
+
+  const std::unordered_map<std::string,CollisionLayer*>& GetCollidesWith()const{
+   return  CollidesWith;
+   };
+
+   void AddCollision(CollisionLayer* CL){
+     CollidesWith.emplace(CL->Id,CL);
+   };
+
+
+
+};
+
 
 
 
@@ -163,6 +302,8 @@ class RenderComponentClass{
     public:
     float Width;
   float Height;
+  std::string Font = "None";
+  std::string Text = "None";
   float X;
     float Y;
     float R;
@@ -171,18 +312,23 @@ float B;
 float A;
 float BorderColorR,BorderColorG,BorderColorB,BorderColorA = 1.0f;
 float BorderWidth = 0.0f;
+vector2 CharactersMargin;
+Align TextAlignX;
+Align TextAlignY;
 Component* OriginalComponent;
 OriginClass OriginX,OriginY;
 std::string TextureId;
-
+bool IsText = false;
     Scene* OwnerScene;
     std::string Id;
        RenderComponentClass(int PosX,int PosY,int W,int H, float R,float G,float B,float A,std::string Id,Scene* OwnerScene,
-      std::string TextureId = "None"):
-      X(PosX),Y(PosY),Width(W),Height(H),R(R),G(G),B(B),A(A),Id(Id),OwnerScene(OwnerScene),TextureId(TextureId){}
+      std::string TextureId = "None",std::string FontId = "None",std::string Text = "None"):
+      X(PosX),Y(PosY),Width(W),Height(H),R(R),G(G),B(B),A(A),Id(Id),OwnerScene(OwnerScene),TextureId(TextureId),Font(FontId),
+      Text(Text){}
  
        
-   virtual void RenderMethod(float X,float Y,float W,float H,float R,float G,float B,float A,float BorderWidth,std::string Texture = "None") =0;
+   virtual void RenderMethod() =0;
+  
 
 };
 
@@ -280,14 +426,184 @@ const std::unordered_map<std::string,std::unique_ptr<SunListener>>& GetListeners
 
 class SunBodys;
 
+struct WorldGridCell{
+
+   int x;
+    int y;
+
+    bool operator==(const WorldGridCell& other) const {
+        return x == other.x && y == other.y;
+    }
+};
+
+struct WorldGridHash{
+    std::size_t operator()(const WorldGridCell& k) const {
+        return std::hash<int>()(k.x) ^ (std::hash<int>()(k.y) << 1);
+    }
+};
+
+enum class CollisionsTypes{
+None,
+Solid,
+Trigger,
+};
+
+
+class Body;
+
+
+class BodyArcadePhysic{
+  private:
+  float Mass = 1.0f;
+  bool DynamicMovement = true;
+  vector2 Velocity;
+  vector2 AccumulatedForces;
+  Body* Owner = nullptr;
+
+
+  public:
+
+  const Body* GetOwner() const{
+   return Owner;
+  };
+
+  void SetOwner(Body* bd){
+   Owner = bd;
+  };
+
+  void SetVelocity(vector2 v){
+  Velocity = v;
+  };
+
+  void SetMass(float v){
+   Mass = v;
+  };
+
+  void SetDynamicMovement(bool b){
+   DynamicMovement = b;
+  };
+  float GetMass(){
+    return Mass;
+  }
+  bool GetDynamicMovement(){
+    return DynamicMovement;
+  }
+  vector2 GetAccumulatedForces(){
+  return AccumulatedForces;
+  }
+  vector2 GetVelocity(){
+    return Velocity;
+  };
+  void AddForce(vector2 m){
+    AccumulatedForces.x += m.x;
+    AccumulatedForces.y += m.y;
+  };
+
+  void PhysicResolve(float DeltaTime);
+
+  void CollisionAtrict();
+
+};
+
+
+class BodySunPhysic{
+  private:
+  float Mass = 1.0f;
+  bool DynamicMovement = true;
+  vector2 Velocity;
+  vector2 AccumulatedForces;
+  Body* Owner = nullptr;
+
+
+  public:
+
+  const Body* GetOwner() const{
+   return Owner;
+  };
+
+  void SetOwner(Body* bd){
+   Owner = bd;
+  };
+
+  void SetVelocity(vector2 v){
+  Velocity = v;
+  };
+
+  void SetMass(float v){
+   Mass = v;
+  };
+
+  void SetDynamicMovement(bool b){
+   DynamicMovement = b;
+  };
+  float GetMass(){
+    return Mass;
+  }
+  bool GetDynamicMovement(){
+    return DynamicMovement;
+  }
+  vector2 GetAccumulatedForces(){
+  return AccumulatedForces;
+  }
+  vector2 GetVelocity(){
+    return Velocity;
+  };
+  void SetAccumulatedForce(vector2 ac){
+   AccumulatedForces = ac;
+  };
+  void AddForce(vector2 m){
+    AccumulatedForces.x += m.x;
+    AccumulatedForces.y += m.y;
+  };
+
+  void PhysicResolve(float DeltaTime);
+
+  void CollisionAtrict();
+
+};
+
 
 
 class Body{
   private:
    std::unique_ptr<Component> BodyComponent = nullptr;
+   CollisionLayer* BodyCollisionLayer = nullptr;
+   using bap = std::unique_ptr<BodyArcadePhysic>;
+   using sunph = std::unique_ptr<BodySunPhysic>;
+   sunph SunPhysic = nullptr;
+   bap ArcadePhysic = nullptr;
  public:
 std::string Id;
-float Width,Height,OffsetX,OffsetY;
+float Width,Height,OffsetX = 0.0f,OffsetY = 0.0f,WorldX = OffsetX,WorldY = OffsetY;
+WorldGridCell WorldGridCell;
+bool Collides = true;
+
+ BodyArcadePhysic* GetBodyArcadePhysics()const{
+ return ArcadePhysic.get();
+};
+
+ BodySunPhysic* GetBodySunPhysics()const{
+ return SunPhysic.get();
+};
+
+void SetBodyArcadePhysic(bap ap){
+ ArcadePhysic = std::move(ap);
+ ArcadePhysic->SetOwner(this);
+};
+
+void SetBodySunPhysic(sunph ap){
+ SunPhysic = std::move(ap);
+ SunPhysic->SetOwner(this);
+};
+CollisionsTypes CollissionType =CollisionsTypes::Solid;
+
+CollisionLayer* GetCollisionLayer(){
+ return BodyCollisionLayer;
+};
+
+
+
+void SetCollisionLayer(std::string Cl);
 SunBodys* Owner = nullptr;
 void CreateBodyComponent();
 Component* GetBodyComponent(){
@@ -334,16 +650,44 @@ void CreateStaticBody(std::string Id,std::unique_ptr<SunBodys> Body);
 };
 };
 
+
+class CollisionsWorld{
+private:
+std::unordered_map<std::string,std::unique_ptr<CollisionLayer>> CollisionLayers;
+std::unordered_map<WorldGridCell,std::vector<Body*>,WorldGridHash> WorldGrid;
+public:
+CollisionPhysicTypes CollisionPhysic = CollisionPhysicTypes::Arcade;
+const std::unordered_map<std::string,std::unique_ptr<CollisionLayer>>& GetCollisionLayersMap()const{
+return CollisionLayers;
+};
+void AddNewCollissionLayer(std::unique_ptr<CollisionLayer> Layer){
+CollisionLayers.emplace(Layer.get()->Id,std::move(Layer));
+};
+void AddNewBodyToWorld(Body* Body);
+const std::unordered_map<WorldGridCell,std::vector<Body*>,WorldGridHash>& GetWorldGrid()const{
+return WorldGrid;
+};
+void CollisionsUpdate(float DeltaTime = 0.0f);
+void PhysicUpdate(float DeltaTime = 0.0f);
+
+};
+
 class SunWorld{
   private:
+  SunWorld(){};
   std::unordered_map<std::string,std::unique_ptr<SunBodys>> StaticBodys;
   std::unordered_map<std::string,std::unique_ptr<Component>> WorldComponents;
+  std::unordered_map<std::string,Component*> BodysComponents;
   public:
  const std::unordered_map<std::string,std::unique_ptr<SunBodys>>& GetStaticBodysMap()const {
     return StaticBodys;
    };
    void AddNewStaticBody(std::string Id,std::unique_ptr<SunBodys> StaticBody){
+      for(auto& B : StaticBody.get()->GetBodysMap()){
+ CollisionsWorld.AddNewBodyToWorld(B.second.get());
+}
     StaticBodys.emplace(Id,std::move(StaticBody));
+ 
    };
  
    const std::unordered_map<std::string,std::unique_ptr<Component>>& GetWorldComponentsMap()const{
@@ -351,7 +695,15 @@ class SunWorld{
    }; 
 
    void AddNewWorldComponent(std::unique_ptr<Component> NewComponent);
+  float WorldGridCellsWidth = 64.0f;
+   CollisionsWorld CollisionsWorld;
 
+
+     static SunWorld& instance(){
+        static SunWorld instance;
+        return instance;
+    }
+   
 
 };
 
@@ -361,7 +713,12 @@ private:
 std::vector<SunBodys*> BodysVector;
 public:
 void AddSunBody(SunBodys* Body){
+  std::cout << "AddSunBody: " << Body << "\n";
  BodysVector.push_back(Body);
+ 
+ for(auto& B : Body->GetBodysMap()){
+ SunWorld::instance().CollisionsWorld.AddNewBodyToWorld(B.second.get());
+}
 };
 const std::vector<SunBodys*>& GetSunBodysVector()const{
 return BodysVector;
@@ -387,7 +744,9 @@ class SunCore {
     RenderCore SunRenderCore;
     SunBrain SunBrain;
     SunBodysControl BodysControl;
-    SunWorld SunWorld;
+    SunWorld& SunWorld = SunWorld.instance();
+    SunTime* SunTime;
+    SunFonts SunFontsControl;
     
 
     static SunCore& instance(){
@@ -412,6 +771,12 @@ class Component{
   
 void ResolveComponent(){
   if(!Dirty) return;
+  if (Owner && Owner->Parent) {
+    if (Owner->Parent == Owner.get()) {
+        std::cout << "Parent self reference!\n";
+    }
+}
+
 Component* Parent = nullptr;
 if (Owner && Owner->Parent) {
     Parent = Owner->Parent->ComponentClass;
@@ -421,6 +786,8 @@ if (Owner && Owner->Parent) {
  switch(Width.Unit){
   case UnitType::Pixel:
   Width.ValueResolved = Width.Value;
+    Width.ValuePixel = Width.Value;
+      Width.RenderValue = Width.Value;
   break;
   case UnitType::Percent:
   float ParentWidth = SunCore::instance().WindowWidth;
@@ -428,6 +795,8 @@ if (Owner && Owner->Parent) {
   ParentWidth = Parent->Width.ValueResolved;
   }
  Width.ValueResolved = ParentWidth * Width.Value;
+ Width.ValuePixel = ParentWidth * Width.Value;
+ Width.RenderValue = ParentWidth * Width.Value;
 
   
   
@@ -436,6 +805,8 @@ if (Owner && Owner->Parent) {
  switch(Height.Unit){
   case UnitType::Pixel:
   Height.ValueResolved = Height.Value;
+   Height.ValuePixel = Height.Value;
+    Height.RenderValue = Height.Value;
   break;
   case UnitType::Percent:
   float ParentHeight = SunCore::instance().WindowHeight;
@@ -443,9 +814,12 @@ if (Owner && Owner->Parent) {
   ParentHeight = Parent->Height.ValueResolved;
   }
   Height.ValueResolved = ParentHeight * Height.Value;
+    Height.ValuePixel = ParentHeight * Height.Value;
+      Height.RenderValue = ParentHeight * Height.Value;
 
   break;
  }
+ if(TextAlingX == Align::None){
  switch(PosX.Unit){
   case UnitType::Pixel:
    if(Parent){
@@ -454,7 +828,7 @@ if (Owner && Owner->Parent) {
     bool WhileFlag = true;
     ActualNode = Owner.get();
   while(WhileFlag){
-  RelativeX += ActualNode->ComponentClass->PosX.ValueResolved;
+  RelativeX += ActualNode->ComponentClass->PosX.ValuePixel;
   if(!ActualNode->Parent){
   WhileFlag = false;
   }else{
@@ -462,19 +836,35 @@ if (Owner && Owner->Parent) {
   }
   }
    PosX.ValueResolved = RelativeX;
+   PosX.ValuePixel = PosX.Value;
+   TransformOriginX();
   }else{
  PosX.ValueResolved = PosX.Value;
+    PosX.ValuePixel = PosX.Value;
+    TransformOriginX();
+
   }
   break;
   case UnitType::Percent:
   float ParentWidth = SunCore::instance().WindowWidth;
+  float ParentX = 0.0f;
   if(Parent){
+    ParentX = Parent->PosX.ValueResolved;
    ParentWidth = Parent->Width.ValueResolved;
+     
   }
-   PosX.ValueResolved = (ParentWidth * PosX.Value)  + Parent->PosX.ValueResolved;
-  
+   PosX.ValueResolved = (ParentWidth * PosX.Value) + ParentX;
+PosX.ValuePixel = (ParentWidth * PosX.Value);
+TransformOriginX();
+
   break;
- }
+ }}else{
+   if(this->Type == ComponentType::Text){
+   ResolveText();
+ };
+ };
+
+ if(TextAlingY == Align::None){
   switch(PosY.Unit){
   case UnitType::Pixel:
    if(Parent){
@@ -483,7 +873,7 @@ if (Owner && Owner->Parent) {
     bool WhileFlag = true;
     ActualNode = Owner.get();
   while(WhileFlag){
-  RelativeY += ActualNode->ComponentClass->PosY.ValueResolved;
+  RelativeY += ActualNode->ComponentClass->PosY.Value;
   if(!ActualNode->Parent){
   WhileFlag = false;
   }else{
@@ -491,34 +881,90 @@ if (Owner && Owner->Parent) {
   }
   }
    PosY.ValueResolved = RelativeY;
+   PosY.ValuePixel = PosY.Value;
+   TransformOriginY();
   }else{
  PosY.ValueResolved = PosY.Value;
+ PosY.ValuePixel = PosY.Value;
+ TransformOriginY();
   }
   break;
   case UnitType::Percent:
   float ParentHeight = SunCore::instance().WindowHeight;
+  float ParentY = 0.0f;
   if(Parent){
+    ParentY = Parent->PosY.ValueResolved;
    ParentHeight = Parent->Height.ValueResolved;
   }
-   PosY.ValueResolved = (ParentHeight * PosY.Value) + Parent->PosY.ValueResolved;
+   PosY.ValueResolved = (ParentHeight * PosY.Value) + ParentY;
+   PosX.ValuePixel = (ParentHeight * PosY.Value);
+   TransformOriginY();
   break;
  }
+}else{
+  ResolveText();
+}
 
  
 
  switch(Border.Width.Unit){
   case UnitType::Pixel:{
     Border.Width.ValueResolved = Border.Width.Value;
+    Border.Width.ValuePixel = Border.Width.Value;
+    Border.Width.RenderValue = Border.Width.Value;
     break;
   
  }
  };
- UpdateRC();
+ 
  if(this->Body){
-  ResolveBody();
+    if(this->Type == ComponentType::Text){
+   ResolveText();
+ };
  }
+
+
+ UpdateRC();
  Dirty = false;
 
+};
+
+void TransformOriginX(){
+ float ax = PosX.ValueResolved;
+ float w = Width.RenderValue;
+ switch(OriginX){
+  case OriginClass::Start:{
+    PosX.RenderValue = ax;
+    break;
+  }
+  case OriginClass::Center:{
+    PosX.RenderValue = ax - (w / 2);
+    break;
+  }
+  case OriginClass::End:{
+    PosX.RenderValue = ax - w;
+    break;
+  }
+ }
+};
+
+void TransformOriginY(){
+float ay = PosY.ValueResolved;
+ float h = Height.RenderValue;
+ switch(OriginY){
+  case OriginClass::Start:{
+    PosY.RenderValue = ay;
+    break;
+  }
+  case OriginClass::Center:{
+    PosY.RenderValue = ay - (h / 2);
+    break;
+  }
+  case OriginClass::End:{
+    PosY.RenderValue = ay - h;
+    break;
+  }
+ }
 };
 
  void UpdateRC(){
@@ -534,32 +980,139 @@ if (Owner && Owner->Parent) {
   RenderComponent->BorderColorA = Border.A;
   RenderComponent->BorderColorB = Border.B;
   RenderComponent->BorderColorG = Border.G;
+  RenderComponent->CharactersMargin = CharactersMargin;
+  RenderComponent->TextAlignX = TextAlingX;
+  RenderComponent->TextAlignY = TextAlingY;
   
  };
 
- void ResolveBody(){
-  for(auto& InnerBody : Body->GetBodysMap()){
+ void ResolveBody(){ 
+ 
    for(auto& InnerBody : Body->GetBodysMap()){
     
     Component* BodyComponent = InnerBody.second->GetBodyComponent();
 
     UnitClass BodyX;
     BodyX.Unit = UnitType::Pixel;
-    BodyX.Value = this->PosX.ValueResolved;
+    BodyX.Value = this->PosX.RenderValue + InnerBody.second.get()->OffsetX;
 
     UnitClass BodyY;
     BodyY.Unit = UnitType::Pixel;
-    BodyY.Value = this->PosY.ValueResolved;
-
+    BodyY.Value = this->PosY.ValueResolved + InnerBody.second.get()->OffsetY;
+    InnerBody.second->WorldX = BodyX.Value;
+   InnerBody.second->WorldY = BodyY.Value;
+    
+   if(BodyComponent){
     BodyComponent->SetX(BodyX);
     BodyComponent->SetY(BodyY);
 
-    BodyComponent->ResolveComponent(); 
-  }
+    BodyComponent->ResolveComponent();
+
+   };
+
+   if(this->GetOriginX() == OriginClass::End){
+   InnerBody.second->WorldX -= InnerBody.second->Width;
+   };
+      if(this->GetOriginY() == OriginClass::End){
+   InnerBody.second->WorldY -= InnerBody.second->Height;
+   };
+
+    if(this->GetOriginX() == OriginClass::Center){
+   InnerBody.second->WorldX -= InnerBody.second->Width / 2;
+   };
+      if(this->GetOriginY() == OriginClass::Center){
+   InnerBody.second->WorldY -= InnerBody.second->Height / 2;
+   };
+
+  };
   
    
-  }
   
+  
+ };
+
+ void ResolveText(){
+  if(Font){
+   float tw = 0.0f;
+   float x = 0.0f;
+   float y = 0.0f;
+   float th = 0.0f;
+   float maxAscent = 0.0f;
+float maxDescent = 0.0f;
+
+
+for(char c : Text){
+    Character ch = Font->GetCharacter(c);
+    tw += (ch.Advance >> 6) + CharactersMargin.x;
+    th += (ch.Size.y + CharactersMargin.y);
+
+    float maxAscent = 0.0f;
+float maxDescent = 0.0f;
+
+    float ascent = ch.Bearing.y;
+    float descent = ch.Size.y - ch.Bearing.y;
+
+    if(ascent > maxAscent)
+        maxAscent = ascent;
+
+    if(descent > maxDescent)
+        maxDescent = descent;
+
+};
+
+ th = maxAscent + maxDescent;
+
+
+
+
+float px = 0.0f;
+float pw = SunCore::instance().WindowWidth;
+float ph = SunCore::instance().WindowHeight;
+float py = 0.0f;
+
+if(Owner->Parent)
+{
+    px = Owner->Parent->ComponentClass->GetX().RenderValue;
+    pw = Owner->Parent->ComponentClass->GetWidth().ValueResolved;
+    py = Owner->Parent->ComponentClass->GetY().RenderValue;
+    ph = Owner->Parent->ComponentClass->GetHeight().ValueResolved;
+}
+if(TextAlingX == Align::Start)
+{
+    float parentStart = px;
+    x = parentStart;
+}
+else if(TextAlingX == Align::Center)
+{
+    float parentCenter = px + (pw / 2.0f);
+    x = parentCenter - (tw / 2.0f);
+}
+else if(TextAlingX == Align::End)
+{
+    x = px + pw - tw;
+}
+
+if(TextAlingY == Align::Start)
+{
+    float parentStart = py;
+    y = parentStart;
+}
+else if(TextAlingY == Align::Center)
+{
+    float parentCenter = py + (ph / 2.0f);
+    y = parentCenter - (th / 2.0f);
+}
+else if(TextAlingY == Align::End)
+{
+    y = py + ph - th;
+}
+std::cout << "\n  Align  " << x << " , "<< PosY.ValueResolved << "  \n  ";
+PosX.ValueResolved = x;
+PosY.ValueResolved = y;
+TransformOriginX();
+TransformOriginY();
+UpdateRC();
+  };
  };
 
   Component(std::string Id,UnitClass W,UnitClass H,UnitClass X,
@@ -673,28 +1226,109 @@ if (Owner && Owner->Parent) {
    BorderClass GetBorder(){
     return Border;
    };
+   
+   ComponentType GetComponentType()const{
+    return Type;
+   };
+
+   void SetComponentType(ComponentType t){
+     Type = t;
+     Dirty = true;
+   };
+  
+   SunFont* GetFont(){
+   return Font;
+   }; 
+
+   void SetFont(SunFont* sf){
+    Font = sf;
+    Dirty = true; 
+   }
+
+   std::string GetText(){
+    return Text;
+   };
+
+   void SetText(std::string T){
+    Text = T;
+   };
 
    void AddBody(std::unique_ptr<SunBodys> SunBody){
     Body = std::move(SunBody);
     SunCore::instance().BodysControl.AddSunBody(Body.get());
     Body->OwnerComponent = this;
    };
+
+
+   void ApplyForce(vector2 v2){
+    if(this->Body){
+    for(auto& b : this->Body->GetBodysMap()){
+      if(SunCore::instance().SunWorld.CollisionsWorld.CollisionPhysic == CollisionPhysicTypes::Arcade){
+      if(b.second->GetBodyArcadePhysics()){
+    b.second->GetBodyArcadePhysics()->AddForce(v2);
+      }else{
+        std::cout << "\n A component must have a Physic Config in Body to add velocity \n";
+      }
+    }else if(SunCore::instance().SunWorld.CollisionsWorld.CollisionPhysic == CollisionPhysicTypes::SunPhysic){
+         if(b.second->GetBodySunPhysics()){
+    b.second->GetBodySunPhysics()->AddForce(v2);
+      }else{
+        std::cout << "\n A component must have a Physic Config in Body to add velocity \n";
+      }
+    }
+  }
+    }else{
+      std::cout << "\n A component must have a Body to add velocity \n";
+    }
+   
+  };
+
+  vector2 GetCharactersMargin()const{
+   return CharactersMargin;
+  };
+
+  void SetCharatersMargin(float x,float y){
+   CharactersMargin.x = x;
+   CharactersMargin.y = y;
+   Dirty = true;
+  };
+
+  Align GetTextAlignX()const{
+  return TextAlingX;
+  };
+
+  void SetTextAlingX(Align A){
+   TextAlingX = A;
+  }; 
+
+    Align GetTextAlignY()const{
+  return TextAlingY;
+  };
+
+  void SetTextAlingY(Align A){
+   TextAlingY = A;
+  }; 
   private:
   std::string Id;
   std::string Texture;
+  vector2 CharactersMargin;
    UnitClass Width;
    UnitClass Height;
    UnitClass PosX;
    UnitClass PosY;
-   OriginClass OriginX;
-   OriginClass OriginY;
+   OriginClass OriginX = OriginClass::Center;
+   OriginClass OriginY = OriginClass::Center;
    BorderClass Border;
    std::unique_ptr<NodeClass> Owner = nullptr;
    RenderComponentClass* RenderComponent = nullptr;
  std::unique_ptr<RGBAClass> RGBA;
    bool Dirty = true;
    std::unique_ptr<SunBodys> Body = nullptr;
-
+   Align TextAlingX = Align::None;
+   Align TextAlingY = Align::None;
+   ComponentType Type;
+   SunFont* Font = nullptr;
+   std::string Text = "None";
   
   
    
@@ -702,3 +1336,4 @@ if (Owner && Owner->Parent) {
   
 
 };
+

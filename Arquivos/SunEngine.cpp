@@ -1,4 +1,6 @@
 #include <iostream>
+#include <cmath>
+#include <ios>
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <string>
@@ -9,19 +11,28 @@
 #include "SunEngineCore.h"
 #include "SunFunctions.h"
 #include "SunImages.h"
+#include "SunText.h"
 
 auto& Core = SunCore::instance();
 
+SunTime Time;
 
 void SunEngineGameLoop(){
 
    while(SunCore::instance().ApplicationState == "Running"){
+       
+      Time.TimeUpdate();
+      float DeltaTime = Time.GetDeltaTime();
+     // DeltaTime = std::min(DeltaTime,0.033f);
 
     SunDispatchs();
     SunUpdateInput();
-    EngineRender();
     ScenesLoop();
-   Core.BodysControl.Update();
+    EngineRender();
+   Core.SunWorld.CollisionsWorld.CollisionsUpdate(DeltaTime);
+   Core.SunWorld.CollisionsWorld.PhysicUpdate(DeltaTime);
+
+    
 
    };
 
@@ -38,8 +49,10 @@ void StartEngine(SunEngineConfig& Config)
 {
 
     Renderer RenderMethods;
+    SunText TextMethods;
     RenderMethods.InitSDLContext(Config);
     RenderMethods.LoadShaders(Config);
+    TextMethods.Init();
     Scene* FirstScene = Config.SunScenes.Scenes[0];
     RunScene(FirstScene);
     SunCore::instance().ApplicationState = "Running";

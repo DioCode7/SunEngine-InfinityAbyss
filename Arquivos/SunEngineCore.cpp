@@ -69,6 +69,7 @@ std::string SunBodys::GetId(){
 };
 
 void SunBodys::CreateStaticBody(std::string Id,std::unique_ptr<SunBodys> Body){
+  StaticBody = true;
   SunCore::instance().SunWorld.AddNewStaticBody(Id,std::move(Body));
 };
 
@@ -78,8 +79,8 @@ void SunBodys::CreateStaticBody(std::string Id,std::unique_ptr<SunBodys> Body){
        
            RenderComponentRectangle(int PosX,int PosY,int W,int H, float R,float G,float B,float A,std::string Id,Scene* OwnerScene):
             RenderComponentClass(PosX,PosY,W,H, R, G, B,A,Id,OwnerScene){}
-         
-              void RenderMethod(float X,float Y,float W,float H,float R,float G,float B,float A,float BorderWidth,std::string TextureId = "None") override {
+       
+              void RenderMethod() override {
 
 
              
@@ -87,11 +88,11 @@ void SunBodys::CreateStaticBody(std::string Id,std::unique_ptr<SunBodys> Body){
                 GLuint Shader = SunCore::instance().Gl.ShaderProgram;
                 float PosX;
                 float PosY;
-                float SizeX = (W / SunCore::instance().WindowWidth) * 2.0f;
-                float SizeY = (H / SunCore::instance().WindowHeight) * 2.0f;
+                float SizeX = (Width / SunCore::instance().WindowWidth) * 2.0f;
+                float SizeY = (Height / SunCore::instance().WindowHeight) * 2.0f;
 
-                float BorderWidthX = (BorderWidth / W);
-                float BorderWidthY = (BorderWidth / H);
+                float BorderWidthX = (BorderWidth / Width);
+                float BorderWidthY = (BorderWidth / Height);
                 switch(this->OriginX){
                 case OriginClass::Center:
                 PosX = (((X / SunCore::instance().WindowWidth)*2.0f)-1.0f);
@@ -229,3 +230,471 @@ void Body::CreateBodyComponent(){
 void SunWorld::AddNewWorldComponent(std::unique_ptr<Component> NewComponent){
    WorldComponents.emplace(NewComponent->GetId(),std::move(NewComponent));
    };
+
+
+ bool VerifyQuadColidesCalc(Body* A,Body* B){
+  bool Verify = false;
+   if(A == nullptr || B == nullptr){
+    std::cout << "Body null\n";
+    return false;
+}
+
+if(A->Owner == nullptr || B->Owner == nullptr){
+    std::cout << "Owner null\n";
+    return false;
+}
+  if(A->GetCollisionLayer() == nullptr || B->GetCollisionLayer() == nullptr){
+    Verify = false;
+  }else{
+   auto& collidesWith = A->GetCollisionLayer()->GetCollidesWith();
+auto it = collidesWith.find(B->GetCollisionLayer()->Id);
+
+if(it != collidesWith.end()){
+  Verify = true;
+  }
+}
+  if(Verify){
+     float Ax,Ay,Aw,Ah;
+   float Bx,By,Bw,Bh;
+
+   
+
+if(A->Owner->GetStatic() || !A->Owner->OwnerComponent){
+    Ax = A->OffsetX;
+    Ay = A->OffsetY;
+    Aw = A->Width;
+    Ah = A->Height;
+   }else{
+   Ax = A->Owner->OwnerComponent->GetX().ValueResolved + A->OffsetX;
+   Ay = A->Owner->OwnerComponent->GetY().ValueResolved + A->OffsetY;
+   Aw = A->Width;
+    Ah = A->Height;
+    if(A->Owner->OwnerComponent->GetOriginX() == OriginClass::Center){
+   Ax -= Aw / 2;
+    }else if(A->Owner->OwnerComponent->GetOriginX() == OriginClass::End){
+  Ax -= Aw;
+
+    };
+       if(A->Owner->OwnerComponent->GetOriginY() == OriginClass::Center){
+   Ay -= Ah / 2;
+    }else if(A->Owner->OwnerComponent->GetOriginY() == OriginClass::End){
+  Ay -= Ah;
+    };
+   }
+    if(B->Owner->GetStatic() || !B->Owner->OwnerComponent){
+    Bx = B->OffsetX;
+    By = B->OffsetY;
+    Bw = B->Width;
+    Bh = B->Height;
+   }else{
+   Bx = B->Owner->OwnerComponent->GetX().ValueResolved + B->OffsetX;
+   By = B->Owner->OwnerComponent->GetY().ValueResolved + B->OffsetY;
+   Bw = B->Width;
+    Bh = B->Height;
+         if(B->Owner->OwnerComponent->GetOriginX() == OriginClass::Center){
+    Bx -= Bw / 2;
+    }else if(B->Owner->OwnerComponent->GetOriginX() == OriginClass::End){
+   Bx -= Bw;
+
+    std::cout << "\n Entrando no if end meu mano \n";
+    };
+       if(B->Owner->OwnerComponent->GetOriginY() == OriginClass::Center){
+     By -= Bh / 2;
+    }else if(B->Owner->OwnerComponent->GetOriginY() == OriginClass::End){
+   By -= Bh;
+   }
+
+ 
+  }
+   std::cout << "\n BodyB X:" << Bx <<"\n";
+   
+   std::cout << "\n BodyA X:" << Ax <<"\n";
+    
+  bool XCollides = (Ax < Bx + Bw) && (Ax + Aw > Bx);
+bool YCollides = (Ay < By + Bh) && (Ay + Ah > By);
+ 
+if(XCollides && YCollides){
+  return true;
+}
+return false;
+
+
+  }
+
+ return false;
+  
+ };  
+ 
+ void SunCollisionPhysicCollision(Body* A,Body* B){
+  auto* phys = A->GetBodySunPhysics();
+  auto* physB = B->GetBodySunPhysics();
+    if (!phys || !physB) return;
+
+   
+   std::cout << "Entrando No Calcullllll";
+    float Acx = A->WorldX + A->Width * 0.5f;
+    float Acy = A->WorldY + A->Height * 0.5f;
+    float Bcx = B->WorldX + B->Width * 0.5f;
+    float Bcy = B->WorldY + B->Height * 0.5f;
+
+    float dx = Acx - Bcx;
+    float dy = Acy - Bcy;
+
+    float px = (A->Width * 0.5f + B->Width * 0.5f) - std::abs(dx);
+    float py = (A->Height * 0.5f + B->Height * 0.5f) - std::abs(dy);
+
+   
+
+    UnitClass newPos;
+    vector2 vel;
+    Body* ActiveForceX = A;
+    Body* ReactiveForceX = B;
+    bool test = px < py;
+   std::cout << test;
+    if (px < py)
+    {
+   
+        float sx = (dx < 0) ? -1.f : 1.f;
+
+        newPos = A->Owner->OwnerComponent->GetX();
+        newPos.ValueResolved += px * sx;
+        A->Owner->OwnerComponent->SetX(newPos);
+
+         
+        vel.y = phys->GetVelocity().y;
+       float vRel = phys->GetVelocity().x - physB->GetVelocity().x;
+
+
+
+float invMassA = 1.0f / phys->GetMass();
+float invMassB = 1.0f / physB->GetMass();
+
+float j = -(vRel) / (invMassA + invMassB);
+ vector2 vja;
+ vector2 vjb;
+ vja.y =  phys->GetVelocity().y;
+ vjb.y =  physB->GetVelocity().y;
+ vja.x = phys->GetVelocity().x + j * invMassA;
+  vjb.x = physB->GetVelocity().x - j * invMassB;
+phys->SetVelocity(vja);
+physB->SetVelocity(vjb);
+
+      
+    }
+    else
+    {
+        float sy = (dy < 0) ? -1.f : 1.f;
+
+        newPos = A->Owner->OwnerComponent->GetY();
+        newPos.ValueResolved += py * sy;
+        A->Owner->OwnerComponent->SetY(newPos);
+
+            vel.x = phys->GetVelocity().x;
+           
+        float vRel = phys->GetVelocity().x - physB->GetVelocity().x;
+
+
+
+float invMassA = 1.0f / phys->GetMass();
+float invMassB = 1.0f / physB->GetMass();
+
+float j = -(vRel) / (invMassA + invMassB);
+ vector2 vja;
+ vector2 vjb;
+ vja.x =  phys->GetVelocity().x;
+ vjb.x =  physB->GetVelocity().x;
+ vja.y = phys->GetVelocity().x + j * invMassA;
+  vjb.y = physB->GetVelocity().x - j * invMassB;
+phys->SetVelocity(vja);
+physB->SetVelocity(vjb);
+    }
+     
+
+    
+ };
+
+ void ArcadeCollisionPhysicCollision(Body* A,Body* B){
+  auto* phys = A->GetBodyArcadePhysics();
+  
+    if (!phys) return;
+   std::cout << "Entrando No Calcullllll";
+    float Acx = A->WorldX + A->Width * 0.5f;
+    float Acy = A->WorldY + A->Height * 0.5f;
+    float Bcx = B->WorldX + B->Width * 0.5f;
+    float Bcy = B->WorldY + B->Height * 0.5f;
+
+    float dx = Acx - Bcx;
+    float dy = Acy - Bcy;
+
+    float px = (A->Width * 0.5f + B->Width * 0.5f) - std::abs(dx);
+    float py = (A->Height * 0.5f + B->Height * 0.5f) - std::abs(dy);
+
+   
+
+    UnitClass newPos;
+    vector2 vel;
+    bool test = px < py;
+   std::cout << test;
+    if (px < py)
+    {
+        float sx = (dx < 0) ? -1.f : 1.f;
+
+        newPos = A->Owner->OwnerComponent->GetX();
+        newPos.ValueResolved += px * sx;
+        A->Owner->OwnerComponent->SetX(newPos);
+
+          vel.x = 0.0f;
+        vel.y = phys->GetVelocity().y;
+        phys->SetVelocity(vel);
+    }
+    else
+    {
+        float sy = (dy < 0) ? -1.f : 1.f;
+
+        newPos = A->Owner->OwnerComponent->GetY();
+        newPos.ValueResolved += py * sy;
+        A->Owner->OwnerComponent->SetY(newPos);
+
+            vel.x = phys->GetVelocity().x;
+            vel.y = 0.0f;
+        phys->SetVelocity(vel);
+    }
+     
+
+    
+ };
+
+  void ArcadeCollisionSensorCollision(Body* A,Body* B){
+
+ };
+
+  void SunCollisionSensorCollision(Body* A,Body* B){
+
+ };
+
+ void ArcadeCollisionMethods(Body* A,Body* B){
+  
+  if(A->CollissionType == CollisionsTypes::Solid && B->CollissionType == CollisionsTypes::Solid ){
+  ArcadeCollisionPhysicCollision(A,B);
+  };
+   if(A->CollissionType == CollisionsTypes::Trigger || B->CollissionType == CollisionsTypes::Trigger ){
+  ArcadeCollisionSensorCollision(A,B);
+  }
+ };
+
+  void SunCollisionMethods(Body* A,Body* B){
+  
+  if(A->CollissionType == CollisionsTypes::Solid && B->CollissionType == CollisionsTypes::Solid ){
+  SunCollisionPhysicCollision(A,B);
+  };
+   if(A->CollissionType == CollisionsTypes::Trigger || B->CollissionType == CollisionsTypes::Trigger ){
+  SunCollisionSensorCollision(A,B);
+  }
+ };
+
+
+
+void VerifyQuadCollisions(Body* A){
+ auto& WorldGrid = SunCore::instance().SunWorld.CollisionsWorld.GetWorldGrid();
+    float CellWidth = SunCore::instance().SunWorld.WorldGridCellsWidth;
+    
+
+    
+    int cellXStart = floor(A->WorldX / CellWidth);
+    int cellYStart = floor(A->WorldY / CellWidth);
+      int cellXEnd = floor(A->WorldX + + A->Width / CellWidth);
+    int cellYEnd = floor(A->WorldY + A->Height / CellWidth);
+   for(int cellX = cellXStart - 1;cellX <= cellXEnd + 1;cellX++){
+      for(int cellY = cellYStart - 1;cellY <= cellYEnd + 1;cellY++){
+      
+        int x = cellX;
+        int y = cellY;
+            WorldGridCell cell{x,y};
+
+            auto it = WorldGrid.find(cell);
+            if(it == WorldGrid.end()) continue;
+       
+            for(Body* B : it->second){
+             
+                if(A == B) continue;
+                 
+                if(!B->Collides || B->CollissionType == CollisionsTypes::None) continue;
+               
+                bool IsCollides = VerifyQuadColidesCalc(A,B);
+
+                if(IsCollides){
+                  std::cout << "//Colisao: " << "  //  ";
+                  if(SunCore::instance().SunWorld.CollisionsWorld.CollisionPhysic == CollisionPhysicTypes::Arcade){
+                  ArcadeCollisionMethods(A,B);
+                  }
+                     if(SunCore::instance().SunWorld.CollisionsWorld.CollisionPhysic == CollisionPhysicTypes::SunPhysic){
+                  SunCollisionMethods(A,B);
+                  }
+                }else{
+                  continue;
+                }
+            }
+        
+    
+  }
+}
+};  
+
+   void CollisionsWorld::CollisionsUpdate(float DeltaTime){
+
+  WorldGrid.clear();
+     for(auto& CollidesBody : SunCore::instance().BodysControl.GetSunBodysVector()){
+        for(auto& InnerBody : CollidesBody->GetBodysMap()){
+            AddNewBodyToWorld(InnerBody.second.get());
+        }
+    }
+     for(auto& CollidesBody : SunCore::instance().SunWorld.GetStaticBodysMap()){
+        for(auto& InnerBody : CollidesBody.second.get()->GetBodysMap()){
+            AddNewBodyToWorld(InnerBody.second.get());
+        }
+    }
+    for(auto& CollidesBody : SunCore::instance().BodysControl.GetSunBodysVector()){
+      for(auto& InnerBody : CollidesBody->GetBodysMap()){
+        if(InnerBody.second.get()->Collides && InnerBody.second.get()->CollissionType != CollisionsTypes::None){
+    VerifyQuadCollisions(InnerBody.second.get());
+        }
+      }
+    }; 
+
+    
+
+      
+  };
+
+
+  void CollisionsWorld::AddNewBodyToWorld(Body* Body){
+ float CellWidth = SunCore::instance().SunWorld.WorldGridCellsWidth;
+ float WorldX = Body->WorldX;
+ float WorldY = Body->WorldY;
+ int startX = floor(Body->WorldX / CellWidth);
+int startY = floor(Body->WorldY / CellWidth);
+
+int endX = floor((Body->WorldX + Body->Width) / CellWidth);
+int endY = floor((Body->WorldY + Body->Height) / CellWidth);
+
+for(int x = startX; x <= endX; x++){
+    for(int y = startY; y <= endY; y++){
+        WorldGridCell cell{x,y};
+        WorldGrid[cell].push_back(Body);
+    }
+}
+  };
+
+
+  void Body::SetCollisionLayer(std::string Cl){
+   auto It = SunCore::instance().SunWorld.CollisionsWorld.GetCollisionLayersMap().find(Cl);
+   if(It !=SunCore::instance().SunWorld.CollisionsWorld.GetCollisionLayersMap().end()){
+     BodyCollisionLayer = SunCore::instance().SunWorld.CollisionsWorld.GetCollisionLayersMap().find(Cl)->second.get();
+   }else{
+   std::cout << "Collision Layer don't Registred" << "\n";
+   };
+  };
+
+  void CollisionsWorld::PhysicUpdate(float DeltaTime){
+    if(SunCore::instance().SunWorld.CollisionsWorld.CollisionPhysic == CollisionPhysicTypes::Arcade){
+  for(auto& CollidesBody : SunCore::instance().BodysControl.GetSunBodysVector()){
+        for(auto& InnerBody : CollidesBody->GetBodysMap()){
+          if(InnerBody.second->GetBodyArcadePhysics()){
+            InnerBody.second->GetBodyArcadePhysics()->PhysicResolve(DeltaTime);
+          }
+        }
+    }
+     for(auto& CollidesBody : SunCore::instance().SunWorld.GetStaticBodysMap()){
+        for(auto& InnerBody : CollidesBody.second.get()->GetBodysMap()){
+              if(InnerBody.second->GetBodyArcadePhysics()){
+            InnerBody.second->GetBodyArcadePhysics()->PhysicResolve(DeltaTime);
+              }
+        }
+        
+    }
+  };
+  if(SunCore::instance().SunWorld.CollisionsWorld.CollisionPhysic == CollisionPhysicTypes::SunPhysic){
+  for(auto& CollidesBody : SunCore::instance().BodysControl.GetSunBodysVector()){
+        for(auto& InnerBody : CollidesBody->GetBodysMap()){
+          if(InnerBody.second->GetBodySunPhysics()){
+            InnerBody.second->GetBodySunPhysics()->PhysicResolve(DeltaTime);
+          }
+        }
+    }
+     for(auto& CollidesBody : SunCore::instance().SunWorld.GetStaticBodysMap()){
+        for(auto& InnerBody : CollidesBody.second.get()->GetBodysMap()){
+              if(InnerBody.second->GetBodySunPhysics()){
+            InnerBody.second->GetBodySunPhysics()->PhysicResolve(DeltaTime);
+              }
+        }
+        
+    }
+  }
+  
+  };
+
+  void BodyArcadePhysic::PhysicResolve(float DeltaTime){
+//std::cout << "Resolvendo a fisica \n";
+
+vector2 Accelleration;
+vector2 Position;
+
+  Accelleration.x = this->GetAccumulatedForces().x / GetMass();
+  Accelleration.y = this->GetAccumulatedForces().y / GetMass();
+  Velocity.x += Accelleration.x * DeltaTime;
+  Velocity.y += Accelleration.y * DeltaTime;
+  Position.x = Velocity.x * DeltaTime;
+  Position.y = Velocity.y * DeltaTime;
+  AccumulatedForces.x = 0.0f;
+  AccumulatedForces.y = 0.0f;
+
+  if(Owner){
+    UnitClass X;
+    X.Unit = UnitType::Pixel;
+    X.Value =  Owner->Owner->OwnerComponent->GetX().ValueResolved + Position.x;
+    Owner->Owner->OwnerComponent->SetX(X);
+
+     UnitClass Y;
+    Y.Unit = UnitType::Pixel;
+    Y.Value = Owner->Owner->OwnerComponent->GetY().ValueResolved + Position.y;
+    Owner->Owner->OwnerComponent->SetY(Y);
+  };
+
+  float damping = 1.0f - (2.0f * DeltaTime);
+Velocity.x *= damping;
+Velocity.y *= damping;
+};
+
+
+  void BodySunPhysic::PhysicResolve(float DeltaTime){
+//std::cout << "Resolvendo a fisica \n";
+
+vector2 Accelleration;
+vector2 Position;
+
+  Accelleration.x = this->GetAccumulatedForces().x / GetMass();
+  Accelleration.y = this->GetAccumulatedForces().y / GetMass();
+  Velocity.x += Accelleration.x * DeltaTime;
+  Velocity.y += Accelleration.y * DeltaTime;
+  Position.x = Velocity.x * DeltaTime;
+  Position.y = Velocity.y * DeltaTime;
+  AccumulatedForces.x = 0.0f;
+  AccumulatedForces.y = 0.0f;
+
+  if(Owner){
+    UnitClass X;
+    X.Unit = UnitType::Pixel;
+    X.Value =  Owner->Owner->OwnerComponent->GetX().ValueResolved + Position.x;
+    Owner->Owner->OwnerComponent->SetX(X);
+
+     UnitClass Y;
+    Y.Unit = UnitType::Pixel;
+    Y.Value = Owner->Owner->OwnerComponent->GetY().ValueResolved + Position.y;
+    Owner->Owner->OwnerComponent->SetY(Y);
+  };
+
+  float damping = 1.0f - (2.0f * DeltaTime);
+Velocity.x *= damping;
+Velocity.y *= damping;
+};
+

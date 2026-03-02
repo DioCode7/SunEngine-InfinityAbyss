@@ -1,6 +1,6 @@
 #include <iostream>
 #include <SDL2/SDL.h>
-#include <GL/gl.h>
+
 #include <memory>
 #include <iostream>
 #include "SunEngineCore.h"
@@ -24,13 +24,12 @@ void Dispatch(SDL_Event& event,SunListener* Listener){
 
 void SunDispatchs(){
 
-    
-
     while(SDL_PollEvent(&event)){
-for(const auto& Listener : SunCore::instance().SunBrain.GetListeners()){
-    if(event.type == SDL_QUIT) {
+        if(event.type == SDL_QUIT) {
       SunCore::instance().ApplicationState = "Off";
     }
+for(const auto& Listener : SunCore::instance().SunBrain.GetListeners()){
+    
 
     if(event.type == SDL_KEYDOWN){
        Dispatch(event,Listener.second.get());   

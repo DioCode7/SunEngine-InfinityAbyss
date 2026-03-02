@@ -1,13 +1,14 @@
 
 #include <string>
 #include <SDL2/SDL.h>
-
 #include <GL/glew.h>
  #include <iostream>
 #include <variant>
 #include <vector>
+
 #include "SunEngineCore.h"
 #include "SunFunctions.h"
+
 
 
 
@@ -46,7 +47,7 @@ void WindowManipulate(const std::string ManipulateType){
            RenderComponentRectangle(int PosX,int PosY,int W,int H, float R,float G,float B,float A,std::string Id,Scene* OwnerScene):
             RenderComponentClass(PosX,PosY,W,H, R, G, B,A,Id,OwnerScene){}
          
-              void RenderMethod(float X,float Y,float W,float H,float R,float G,float B,float A,float BorderWidth,std::string TextureId = "None") override {
+              void RenderMethod() override {
 
 
              
@@ -54,11 +55,11 @@ void WindowManipulate(const std::string ManipulateType){
                 GLuint Shader = SunCore::instance().Gl.ShaderProgram;
                 float PosX;
                 float PosY;
-                float SizeX = (W / SunCore::instance().WindowWidth) * 2.0f;
-                float SizeY = (H / SunCore::instance().WindowHeight) * 2.0f;
+                float SizeX = (Width / SunCore::instance().WindowWidth) * 2.0f;
+                float SizeY = (Height / SunCore::instance().WindowHeight) * 2.0f;
 
-                float BorderWidthX = (BorderWidth / W);
-                float BorderWidthY = (BorderWidth / H);
+                float BorderWidthX = (BorderWidth / Width);
+                float BorderWidthY = (BorderWidth / Height);
                 switch(this->OriginX){
                 case OriginClass::Center:
                 PosX = (((X / SunCore::instance().WindowWidth)*2.0f)-1.0f);
@@ -123,14 +124,14 @@ class RenderComponentCircle : public RenderComponentClass{
     public:
        RenderComponentCircle(int Radius,int PosX,int PosY,int R,int G,int B,int A,std::string Id,Scene* OwnerScene) :
         RenderComponentClass(PosX,PosY,Radius * 2,Radius * 2,R,G,B,A,Id,OwnerScene){}
-
-        void RenderMethod(float X,float Y,float W, float H, float R, float G,float B,float A,float BorderWidth,std::string TextureId = "None") override {
+  
+        void RenderMethod() override {
          GLuint Shader = SunCore::instance().Gl.ShaderProgram;
 
             
 
-                float SizeX = (W / SunCore::instance().WindowWidth) * 2.0f;
-                float SizeY = (H / SunCore::instance().WindowHeight) * 2.0f;
+                float SizeX = (Width / SunCore::instance().WindowWidth) * 2.0f;
+                float SizeY = (Height / SunCore::instance().WindowHeight) * 2.0f;
                 float PosX;
                 float PosY;
                 switch(this->OriginX){
@@ -192,21 +193,21 @@ public:
 RenderComponentSprite(std:: string SpriteId,float PosX,float PosY,float W,float H,std::string TextureId,Scene* OwnerScene) :
 RenderComponentClass(PosX,PosY,W,H,0,0,0,0,SpriteId,OwnerScene,TextureId){}
 
-    void RenderMethod(float X,float Y,float W,float H,float R,float G,float B,float A,float BorderWidth,std::string TextureID)override{
+    void RenderMethod()override{
    
       GLuint Shader = SunCore::instance().Gl.ShaderProgram;
-    Texture* Tex = SunCore::instance().SunRenderCore.GetTexture(TextureID);
+    Texture* Tex = SunCore::instance().SunRenderCore.GetTexture(this->TextureId);
     
    float PosX;
    float PosY;
 
              
 
-                float SizeX = (W / SunCore::instance().WindowWidth) * 2.0f;
-                float SizeY = (H / SunCore::instance().WindowHeight) * 2.0f;
+                float SizeX = (Width / SunCore::instance().WindowWidth) * 2.0f;
+                float SizeY = (Height / SunCore::instance().WindowHeight) * 2.0f;
 
-                   float BorderWidthX = (BorderWidth / W);
-                float BorderWidthY = (BorderWidth / H);
+                   float BorderWidthX = (BorderWidth / Width);
+                float BorderWidthY = (BorderWidth / Height);
 
                   switch(this->OriginX){
                 case OriginClass::Center:
@@ -274,34 +275,174 @@ RenderComponentClass(PosX,PosY,W,H,0,0,0,0,SpriteId,OwnerScene,TextureId){}
 
 
 
+class RenderComponentText : public RenderComponentClass{
+public:
+RenderComponentText(std:: string Id,float PosX,float PosY,float W,float H,Scene* OwnerScene,std::string FontId,std::string Text,float R,float G,float B,float A) :
+RenderComponentClass(PosX,PosY,W,H,R,G,B,A,Id,OwnerScene,"None",FontId,Text){}
+    
+void RenderMethod()override{
+   GLuint Shader = SunCore::instance().Gl.TextShader;
+    SunFont* Font = SunCore::instance().SunFontsControl.GetFont(this->Font);
+    std::string Text = this->Text;
+    
+   float PosX = this->X;
+   float PosY = this->Y;
+   float WindowHeight = SunCore::instance().WindowHeight;
+  float WindowWidth = SunCore::instance().WindowWidth;
+
+             
+
+
+                float SizeX = this->Width;
+                float SizeY =  this->Height;
+    
+          if(TextAlignX != Align::None){
+                  switch(this->OriginX){
+                case OriginClass::Center:
+                PosX =  this->X - (SizeX / 2) ;
+                break;
+                case OriginClass::Start:
+                  PosX =  this->X;
+                break;
+                 case OriginClass::End:
+                  PosX =  this->X - (SizeX);
+                break;
+               }
+              }
+              if(TextAlignY != Align::None){
+               switch(this->OriginY){
+                case OriginClass::Center:
+                 PosY = WindowHeight - (this->Y + Height / 2) ;
+                 break;
+                 case OriginClass::End:
+                 PosY =  this->Y;
+                 break;
+                  case OriginClass::Start:
+                 PosY = WindowHeight - (this->Y + Height);
+                 break;
+               }
+
+              };
+
+
+float Ortho[16] = {
+    2.0f / WindowWidth,  0, 0, 0,
+    0,  2.0f / WindowHeight, 0, 0,
+    0,  0, -1, 0,
+   -1, -1, 0, 1
+};
+
+
+                glUseProgram(Shader);
+        GLuint Projection = SunCore::instance().Gl.TextUniformsLocations.ProjectionMatrix;
+                 glUniformMatrix4fv(Projection,1,GL_FALSE,Ortho);
+                glBindVertexArray(SunCore::instance().Gl.TextVAO);
+
+                 GLint uPosLoc = SunCore::instance().Gl.TextUniformsLocations.uPos;
+                  GLint uSizeLoc = SunCore::instance().Gl.TextUniformsLocations.uSize;
+                  GLint uColorLoc = SunCore::instance().Gl.TextUniformsLocations.uColor;
+                    GLint uTexture = SunCore::instance().Gl.TextUniformsLocations.uTexture;
+
+
+                 glUniform1i(uTexture,0);
+                
+                  glUniform4f(uColorLoc,this->R,this->G,this->B,this->A);
+                  
+                  glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D,Font->AtlasTexture);
+                  
+                     float CursorX = PosX;
+                 float CursorY = PosY;
+                 
+                 int i = 0;
+
+              
+            
+                    for(char c : Text){
+                      
+                      Character ch = Font->GetCharacter(c);
+                      float xpos = CursorX + ch.Bearing.x + CharactersMargin.x * i;
+                      float ypos = CursorY - (ch.Size.y - ch.Bearing.y);
+                      float w = ch.Size.x;
+                      float h = ch.Size.y;
+                      vector2 UvStart = ch.UvMin;
+                      vector2 UvEnd = ch.UvMax;
+
+                      
+                      
+
+   float vertices[] = {
+    xpos,     ypos + h,   0.0f, UvStart.x, UvStart.y,
+    xpos,     ypos,       0.0f, UvStart.x, UvEnd.y,
+    xpos + w, ypos,       0.0f, UvEnd.x,   UvEnd.y,
+
+    xpos,     ypos + h,   0.0f, UvStart.x, UvStart.y,
+    xpos + w, ypos,       0.0f, UvEnd.x,   UvEnd.y,
+    xpos + w, ypos + h,   0.0f, UvEnd.x,   UvStart.y
+};
+
+
+    glBindBuffer(GL_ARRAY_BUFFER, SunCore::instance().Gl.TextVBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+  glUseProgram(Shader);
+  glEnable(GL_BLEND);
+glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glDrawArrays(GL_TRIANGLES,0,6);
+               // std::cout << "\n  Letra:  " << c << "Desenhada! \n  ";
+                CursorX += ch.Advance >> 6;
+                 i++;
+                    }
+
+
+               
+                
+             
+               
+                 
+               
+};
+   
+   
+   
+
+
+
+    
+
+
+};
+
+
+
       
-    void SunRender::AddRectangle(Component* ComponentClass,Scene* OwnerScene,Component* Parent){
-     
-  auto ComponentNode = std::make_unique<NodeClass>();
+    void SunRender::AddRectangle(std::unique_ptr<Component> ComponentClass,Scene* OwnerScene,Component* Parent){
+    auto ComponentNode = std::make_unique<NodeClass>();
 
   NodeClass* ParentNode = nullptr;
   if(Parent){
     ParentNode = Parent->GetOwner();
   }
   ComponentNode->Parent = ParentNode;
-  ComponentNode->ComponentClass = ComponentClass;
-     ComponentClass->SetOwner(std::move(ComponentNode));
-  RenderComponentRectangle* Rc = new RenderComponentRectangle(ComponentClass->GetX().ValueResolved,
-    ComponentClass->GetY().ValueResolved,ComponentClass->GetWidth().ValueResolved,ComponentClass->GetHeight().ValueResolved,
-    ComponentClass->GetRGBA()->R,ComponentClass->GetRGBA()->G,ComponentClass->GetRGBA()->B,ComponentClass->GetRGBA()->A,ComponentClass->GetId(),OwnerScene);
-    Rc->OriginX = ComponentClass->GetOriginX();
-    Rc->OriginY = ComponentClass->GetOriginY();
-    Rc->OriginalComponent = ComponentClass;
-     ComponentClass->SetRenderComponent(Rc);
-     ComponentClass->ResolveComponent();
+  ComponentNode->ComponentClass = ComponentClass.get();
+    ComponentClass.get()->SetOwner(std::move(ComponentNode));
+  ComponentClass.get()->ResolveComponent();
+  RenderComponentRectangle* Rc = new RenderComponentRectangle(ComponentClass.get()->GetX().ValueResolved,
+    ComponentClass.get()->GetY().ValueResolved,ComponentClass.get()->GetWidth().ValueResolved,ComponentClass.get()->GetHeight().ValueResolved,ComponentClass.get()->GetRGBA()->R,
+    ComponentClass.get()->GetRGBA()->G,ComponentClass.get()->GetRGBA()->B,ComponentClass.get()->GetRGBA()->A,ComponentClass.get()->GetId(),OwnerScene);
+    float Y = ComponentClass.get()->GetY().ValueResolved;
+    Rc->OriginX = ComponentClass.get()->GetOriginX();
+    Rc->OriginY = ComponentClass.get()->GetOriginY();
+    Rc->OriginalComponent = ComponentClass.get();
+    ComponentClass.get()->SetRenderComponent(Rc);
   SunCore::instance().SunEngineConfig->Render.RenderVector.push_back(Rc);
-     
-           
+  SunCore::instance().SunWorld.AddNewWorldComponent(std::move(ComponentClass));
+
            
 
         };
     
- void SunRender::AddCircle(Component* ComponentClass,Scene* OwnerScene,Component* Parent){
+ void SunRender::AddCircle(std::unique_ptr<Component>ComponentClass,Scene* OwnerScene,Component* Parent){
     auto ComponentNode = std::make_unique<NodeClass>();
  
   NodeClass* ParentNode = nullptr;
@@ -309,16 +450,18 @@ RenderComponentClass(PosX,PosY,W,H,0,0,0,0,SpriteId,OwnerScene,TextureId){}
     ParentNode = Parent->GetOwner();
   }
   ComponentNode->Parent = ParentNode;
-  ComponentNode->ComponentClass = ComponentClass;
+  ComponentNode->ComponentClass = ComponentClass.get();
    ComponentClass->SetOwner(std::move(ComponentNode));
    ComponentClass->ResolveComponent();
-  RenderComponentCircle* Rc = new RenderComponentCircle(ComponentClass->GetWidth().ValueResolved,ComponentClass->GetX().ValueResolved,
-    ComponentClass->GetY().ValueResolved,
-    ComponentClass->GetRGBA()->R,ComponentClass->GetRGBA()->G,ComponentClass->GetRGBA()->B,ComponentClass->GetRGBA()->A,ComponentClass->GetId(),OwnerScene);
-    Rc->OriginX = ComponentClass->GetOriginX();
-    Rc->OriginY = ComponentClass->GetOriginY();
-    Rc->OriginalComponent = ComponentClass;
+  RenderComponentCircle* Rc = new RenderComponentCircle(ComponentClass.get()->GetWidth().ValueResolved,ComponentClass.get()->GetX().ValueResolved,
+    ComponentClass.get()->GetY().ValueResolved,
+    ComponentClass.get()->GetRGBA()->R,ComponentClass.get()->GetRGBA()->G,ComponentClass.get()->GetRGBA()->B,ComponentClass.get()->GetRGBA()->A,ComponentClass.get()->GetId(),OwnerScene);
+    Rc->OriginX = ComponentClass.get()->GetOriginX();
+    Rc->OriginY = ComponentClass.get()->GetOriginY();
+    Rc->OriginalComponent = ComponentClass.get();
   SunCore::instance().SunEngineConfig->Render.RenderVector.push_back(Rc);
+  ComponentClass.get()->SetRenderComponent(Rc);
+  SunCore::instance().SunWorld.AddNewWorldComponent(std::move(ComponentClass));
      
  }      
  
@@ -385,3 +528,35 @@ break;
  }
 }
 }
+
+
+ void SunRender::AddText(std::unique_ptr<Component>ComponentClass,std::string FontId,std::string Text,Scene* OwnerScene,Component* Parent){
+ auto ComponentNode = std::make_unique<NodeClass>();
+
+  NodeClass* ParentNode = nullptr;
+  if(Parent){
+    ParentNode = Parent->GetOwner();
+  }
+  ComponentNode->Parent = ParentNode;
+  ComponentNode->ComponentClass = ComponentClass.get();
+    ComponentClass.get()->SetOwner(std::move(ComponentNode));
+  ComponentClass.get()->ResolveComponent();
+  RenderComponentText* Rc = new RenderComponentText(ComponentClass.get()->GetId(),ComponentClass.get()->GetX().ValueResolved,
+    ComponentClass.get()->GetY().ValueResolved,ComponentClass.get()->GetWidth().ValueResolved,ComponentClass.get()->GetHeight().ValueResolved,OwnerScene,FontId,Text,
+  ComponentClass.get()->GetRGBA()->R,ComponentClass.get()->GetRGBA()->G,ComponentClass.get()->GetRGBA()->B,ComponentClass.get()->GetRGBA()->A);
+    ;
+    Rc->OriginX = ComponentClass.get()->GetOriginX();
+    Rc->OriginY = ComponentClass.get()->GetOriginY();
+    Rc->OriginalComponent = ComponentClass.get();
+    Rc->CharactersMargin = ComponentClass->GetCharactersMargin();
+        Rc->TextAlignX = ComponentClass->GetTextAlignX();
+         Rc->TextAlignX = ComponentClass->GetTextAlignY();
+  ComponentClass->SetComponentType(ComponentType::Text);
+ ComponentClass->SetFont(SunCore::instance().SunFontsControl.GetFont(FontId));
+    ComponentClass.get()->SetRenderComponent(Rc);
+  SunCore::instance().SunEngineConfig->Render.RenderVector.push_back(Rc);
+  SunCore::instance().SunWorld.AddNewWorldComponent(std::move(ComponentClass));
+
+
+ }
+     
