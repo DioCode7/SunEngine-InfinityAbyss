@@ -195,13 +195,13 @@ int main(int argc, char** argv)
   
      UnitClass InfinityAbyssMenuArtX;
      InfinityAbyssMenuArtX.Unit = UnitType::Percent;
-     InfinityAbyssMenuArtX.Value = 0.0f;
+     InfinityAbyssMenuArtX.Value = -0.2f;
    UnitClass InfinityAbyssMenuArtY;
      InfinityAbyssMenuArtY.Unit = UnitType::Percent;
      InfinityAbyssMenuArtY.Value = 0.0f;
   UnitClass InfinityAbyssMenuArtW;
      InfinityAbyssMenuArtW.Unit = UnitType::Percent;
-     InfinityAbyssMenuArtW.Value = 1.0f;
+     InfinityAbyssMenuArtW.Value = 1.2f;
     UnitClass InfinityAbyssMenuArtH;
      InfinityAbyssMenuArtH.Unit = UnitType::Percent;
      InfinityAbyssMenuArtH.Value = 1.0f;

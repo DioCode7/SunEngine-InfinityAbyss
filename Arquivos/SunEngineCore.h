@@ -23,6 +23,24 @@ struct vector2{
   float y = 0.0f;
 };
 
+
+struct vector3{
+  float x = 0.0f;
+  float y = 0.0f;
+  float z = 0.0f;
+};
+
+
+struct vector4{
+  float x = 0.0f;
+  float y = 0.0f;
+  float z = 0.0f;
+  float xy = 0.0f;
+};
+
+
+
+
 enum class Align{
   Start,
   Center,
@@ -63,6 +81,81 @@ class SunFont{
 
 
 
+};
+
+enum class UniformType{
+ OneFloat,
+ TwoFLoat,
+ ThreeFloat,
+ FourFloat,
+ Texture2D,
+ OneInt,
+
+};
+
+class ShaderUniform{
+ public:
+ UniformType Type;
+ GLint Location;
+ int IntValue;
+ int FloatValue;
+ vector2 TwoFloatValue;
+  
+ 
+};
+
+class SunShader{
+  private:
+   std::unique_ptr<char> VertexShader;
+   std::unique_ptr<char> FragmentShader;
+   std::unordered_map<std::string,std::unique_ptr<ShaderUniform>> Uniforms;
+  public:
+   void SetVertexShader(std::unique_ptr<char> vs){
+    VertexShader = std::move(vs);
+   };
+   void SetFragmentShader(std::unique_ptr<char> fs){
+    VertexShader = std::move(fs);
+   };
+   char* GetVertexShader(){
+    return VertexShader.get();
+   };
+
+   char* GetFragmentShader(){
+    return FragmentShader.get();
+   };
+
+   void AddUniform(std::string Id,std::unique_ptr<ShaderUniform> U){
+     Uniforms.emplace(Id,std::move(U));
+   };
+
+   ShaderUniform* GetUniform(std::string Id){
+   auto it = Uniforms.find(Id);
+   if(it != Uniforms.end()){
+    return it->second.get();
+   }
+   return nullptr;
+   }
+   
+};
+
+
+class SunShadersCore{
+private:
+  std::unordered_map<std::string,std::unique_ptr<SunShader>> Shaders;
+public:
+    
+   void AddShaderToWorld(std::string Id,std::unique_ptr<SunShader> s){
+     Shaders.emplace(Id,std::move(s));
+   };
+   
+   SunShader* GetShader(std::string Id){
+   auto it = Shaders.find(Id);
+   if(it != Shaders.end()){
+    return it->second.get();
+   }
+   return nullptr;
+   }
+   
 };
 
 enum class ComponentType{
@@ -747,6 +840,7 @@ class SunCore {
     SunWorld& SunWorld = SunWorld.instance();
     SunTime* SunTime;
     SunFonts SunFontsControl;
+    SunShadersCore SunShaders;
     
 
     static SunCore& instance(){
