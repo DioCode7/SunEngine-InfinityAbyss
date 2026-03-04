@@ -22,13 +22,14 @@ void SunEngineGameLoop(){
    while(SunCore::instance().ApplicationState == "Running"){
        
       Time.TimeUpdate();
+       float t = Time.GetTime();
       float DeltaTime = Time.GetDeltaTime();
      // DeltaTime = std::min(DeltaTime,0.033f);
 
     SunDispatchs();
     SunUpdateInput();
     ScenesLoop();
-    EngineRender();
+    EngineRender(DeltaTime,t);
    Core.SunWorld.CollisionsWorld.CollisionsUpdate(DeltaTime);
    Core.SunWorld.CollisionsWorld.PhysicUpdate(DeltaTime);
 

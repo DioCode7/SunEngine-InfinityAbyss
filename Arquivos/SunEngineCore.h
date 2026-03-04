@@ -104,29 +104,64 @@ class ShaderUniform{
  
 };
 
+enum class SunUniformsTypes{
+uSunPos,
+uSunSize,
+uSunProjection,
+uSunTexture,
+uSunTime,
+uSunTextureMask,
+};
+
+
+
 class SunShader{
   private:
-   std::unique_ptr<char> VertexShader;
-   std::unique_ptr<char> FragmentShader;
+    GLuint ShaderProgram;
+    unsigned int VAO;
+    unsigned int VBO;
    std::unordered_map<std::string,std::unique_ptr<ShaderUniform>> Uniforms;
+   std::unordered_map<SunUniformsTypes,GLint> SunUniforms;
   public:
-   void SetVertexShader(std::unique_ptr<char> vs){
-    VertexShader = std::move(vs);
-   };
-   void SetFragmentShader(std::unique_ptr<char> fs){
-    VertexShader = std::move(fs);
-   };
-   char* GetVertexShader(){
-    return VertexShader.get();
-   };
+ 
+  void SetShaderProgram(GLuint sp){
+  ShaderProgram = sp;
+  };
+  unsigned int GetShaderProgram(){
+   return ShaderProgram;
+  };
 
-   char* GetFragmentShader(){
-    return FragmentShader.get();
-   };
+  unsigned int GetVAO()const{
+  return VAO;
+  };
 
-   void AddUniform(std::string Id,std::unique_ptr<ShaderUniform> U){
+  unsigned int GetVBO()const{
+  return VBO;
+  };
+
+  void SetVBO(unsigned int vbo){
+   VBO = vbo;
+  };
+
+  void SetVAO(unsigned int vao){
+   VAO = vao;
+  };
+
+   void AddUniform(const char* Id,std::unique_ptr<ShaderUniform> U){
+    U->Location = glGetUniformLocation(ShaderProgram,Id);
+        std::cout << "\n SunUniforms:  " << "SunPos:  " << U->Location << "\n";
      Uniforms.emplace(Id,std::move(U));
+
    };
+
+   void AddSunUniform(SunUniformsTypes su,GLint loc){
+        SunUniforms.emplace(su,loc);
+   };
+
+     const std::unordered_map<SunUniformsTypes,GLint>& GetSunUniforms() const {
+    return SunUniforms;
+     };
+
 
    ShaderUniform* GetUniform(std::string Id){
    auto it = Uniforms.find(Id);
@@ -144,9 +179,7 @@ private:
   std::unordered_map<std::string,std::unique_ptr<SunShader>> Shaders;
 public:
     
-   void AddShaderToWorld(std::string Id,std::unique_ptr<SunShader> s){
-     Shaders.emplace(Id,std::move(s));
-   };
+   void AddShaderToWorld(std::string Id,std::unique_ptr<SunShader> s);
    
    SunShader* GetShader(std::string Id){
    auto it = Shaders.find(Id);
@@ -187,15 +220,25 @@ private:
 float DeltaTime = 0.0f;
 using Clock = std::chrono::high_resolution_clock;
 std::chrono::time_point<Clock> LastFrame;
+float Time = 0.0f;
+std::chrono::time_point<Clock> InitTime;
+
 public:
 SunTime(){
   LastFrame = Clock::now();
+  InitTime = Clock::now();
+};
+float GetTime(){
+return Time;
 };
 void TimeUpdate(){
 auto Now = Clock::now();
 std::chrono::duration<float> Elapsed = Now - LastFrame;
 DeltaTime = Elapsed.count();
 LastFrame = Now;
+
+std::chrono::duration<float> Elapsed2 = InitTime - Now;
+Time = Elapsed2.count();
 
 };
 float GetDeltaTime()const{
@@ -388,7 +431,7 @@ public:
 
 };
 
-
+class Material;
 
 
 class RenderComponentClass{
@@ -399,18 +442,21 @@ class RenderComponentClass{
   std::string Text = "None";
   float X;
     float Y;
-    float R;
+    float R; 
 float G;
 float B;
 float A;
 float BorderColorR,BorderColorG,BorderColorB,BorderColorA = 1.0f;
 float BorderWidth = 0.0f;
+Material* Material = nullptr;
+
 vector2 CharactersMargin;
 Align TextAlignX;
 Align TextAlignY;
 Component* OriginalComponent;
 OriginClass OriginX,OriginY;
 std::string TextureId;
+std::string TextureMask = "None";
 bool IsText = false;
     Scene* OwnerScene;
     std::string Id;
@@ -418,12 +464,15 @@ bool IsText = false;
       std::string TextureId = "None",std::string FontId = "None",std::string Text = "None"):
       X(PosX),Y(PosY),Width(W),Height(H),R(R),G(G),B(B),A(A),Id(Id),OwnerScene(OwnerScene),TextureId(TextureId),Font(FontId),
       Text(Text){}
+
  
        
    virtual void RenderMethod() =0;
   
 
 };
+
+
 
 class SunEngineConfig{
       public:
@@ -456,6 +505,72 @@ class Texture{
     int Height;
 
   
+};
+
+enum class BlendOptions{
+None,
+Alpha,
+Add,
+};
+
+
+class Material{
+  private:
+  std::unordered_map<std::string,float> FloatUniforms;
+std::unordered_map<std::string,vector2> TwoFloatsUniforms;
+std::unordered_map<std::string,vector3> ThreeFloatUniforms;
+std::unordered_map<std::string,vector4> FourFloatUniforms;
+std::unordered_map<std::string,Texture*> TexturesUniforms;
+
+  public:
+ SunShader* Shader = nullptr;
+ BlendOptions BlendMode =BlendOptions::Alpha;
+ void AddTextureUniform(std::string Id,std::string TextureId);
+ void AddFloatUniform(std::string Id,float f){
+  FloatUniforms.emplace(Id,f);
+ };
+ void AddTwoFloatsUniform(std::string Id,float x,float y){
+  vector2 v2;
+  v2.x = x;
+  v2.y = y;
+  TwoFloatsUniforms.emplace(Id,v2);
+ };
+  void AddThreeFloatsUniform(std::string Id,float x,float y,float z){
+  vector3 v3;
+  v3.x = x;
+  v3.y = y;
+  v3.z = z;
+  ThreeFloatUniforms.emplace(Id,v3);
+ };
+   void AddFourFloatsUniform(std::string Id,float x,float y,float z,float xy){
+  vector4 v4;
+  v4.x = x;
+  v4.y = y;
+  v4.z = z;
+  v4.xy = xy;
+  FourFloatUniforms.emplace(Id,v4);
+ };
+ const std::unordered_map<std::string,Texture*>& GetTexturesUniforms()const{
+   return TexturesUniforms;
+ };
+ const std::unordered_map<std::string,vector4>& GetFourFloatsUniforms()const{
+   return FourFloatUniforms;
+ };
+  const std::unordered_map<std::string,vector3>& GetThreeFloatsUniforms()const{
+   return ThreeFloatUniforms;
+ };
+  const std::unordered_map<std::string,vector2>& GetTwoFloatsUniforms()const{
+   return TwoFloatsUniforms;
+ };
+  const std::unordered_map<std::string,float>& GetFloatsUniforms()const{
+   return FloatUniforms;
+ };
+
+
+
+
+ void Apply(RenderComponentClass* rc,float t,float dt);
+ 
 };
 
 class RenderCore{
@@ -771,6 +886,7 @@ class SunWorld{
   std::unordered_map<std::string,std::unique_ptr<SunBodys>> StaticBodys;
   std::unordered_map<std::string,std::unique_ptr<Component>> WorldComponents;
   std::unordered_map<std::string,Component*> BodysComponents;
+  std::unordered_map<std::string,std::unique_ptr<Material>> Materials;
   public:
  const std::unordered_map<std::string,std::unique_ptr<SunBodys>>& GetStaticBodysMap()const {
     return StaticBodys;
@@ -779,6 +895,7 @@ class SunWorld{
       for(auto& B : StaticBody.get()->GetBodysMap()){
  CollisionsWorld.AddNewBodyToWorld(B.second.get());
 }
+
     StaticBodys.emplace(Id,std::move(StaticBody));
  
    };
@@ -796,6 +913,18 @@ class SunWorld{
         static SunWorld instance;
         return instance;
     }
+
+    Material* GetMaterial(std::string Id){
+     auto it = Materials.find(Id);
+     if(it != Materials.end()){
+      return it->second.get();
+     };
+     return nullptr;
+    };
+
+    void AddMaterialToWorld(std::string MaterialId,std::string ShaderId);
+
+    
    
 
 };
@@ -1320,6 +1449,10 @@ UpdateRC();
    BorderClass GetBorder(){
     return Border;
    };
+
+   void AddMaterial(std::string Id){
+     RenderComponent->Material = SunCore::instance().SunWorld.GetMaterial(Id);
+   };
    
    ComponentType GetComponentType()const{
     return Type;
@@ -1397,6 +1530,10 @@ UpdateRC();
 
     Align GetTextAlignY()const{
   return TextAlingY;
+  };
+
+  void SetTextureMask(std::string m){
+   RenderComponent->TextureMask = m;
   };
 
   void SetTextAlingY(Align A){

@@ -106,7 +106,8 @@ void WindowManipulate(const std::string ManipulateType){
                   glUniform1i(uShapeType,0);
                   glUniform1i(uUseTexture,0);
 
-                
+                  glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 glDrawArrays(GL_TRIANGLE_FAN,0,4);
 
 
@@ -178,7 +179,8 @@ class RenderComponentCircle : public RenderComponentClass{
                   glUniform1i(uShapeType,1);
                     glUniform1i(uUseTexture,0);
 
-                
+                  glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 glDrawArrays(GL_TRIANGLE_FAN,0,4);
 
 
@@ -254,7 +256,7 @@ RenderComponentClass(PosX,PosY,W,H,0,0,0,0,SpriteId,OwnerScene,TextureId){}
                   glUniform2f(uSizeLoc,SizeX,SizeY);
                   
                   glUniform1i(uShapeType,0);
-                  glUniform1i(uUseTexture,1);
+              
                  glUniform1i(uTexture,0);
                  glUniform1i(uFlipY,1);
                  glUniform1i(uFlipX,0);
@@ -263,6 +265,9 @@ RenderComponentClass(PosX,PosY,W,H,0,0,0,0,SpriteId,OwnerScene,TextureId){}
                   glUniform4f(uBorderColor,this->BorderColorR,this->BorderColorG,this->BorderColorB,this->BorderColorA);
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D,Tex->GPUID);
+                    glUniform1i(uUseTexture,1);
+                  glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                  
                 glDrawArrays(GL_TRIANGLE_FAN,0,4);
 

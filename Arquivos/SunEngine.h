@@ -5,6 +5,7 @@
 #include "SunImages.h"
 #include "SunManager.h"
 #include "SunText.h"
+#include "SunRender.h"
 
 
 void StartEngine(SunEngineConfig& Config);

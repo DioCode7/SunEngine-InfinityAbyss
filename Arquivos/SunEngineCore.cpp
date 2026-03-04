@@ -5,6 +5,7 @@
 #include <variant>
 #include <unordered_map>
 #include "SunEngineCore.h"
+#include "SunRender.h"
 
 void Scene::SceneConfigs() {}
 void Scene::OnLoad() {}
@@ -697,4 +698,193 @@ vector2 Position;
 Velocity.x *= damping;
 Velocity.y *= damping;
 };
+ void SunWorld::AddMaterialToWorld(std::string MaterialId,std::string ShaderId){
+      std::unique_ptr<Material> material = std::make_unique<Material>();
+      material->Shader = SunCore::instance().SunShaders.GetShader(ShaderId);
+      Materials.emplace(MaterialId,std::move(material));
 
+    };
+void Material::Apply(RenderComponentClass* rc,float t,float dt){
+    
+   auto Sh = Shader->GetShaderProgram();
+    int ti = 0;
+
+    glUseProgram(Sh);
+    glBindVertexArray(Shader->GetVAO());
+
+    vector2 UvStart;
+    UvStart.x = 0.0f;
+    UvStart.y = 0.0f;
+    vector2 UvEnd;
+    UvEnd.x = 1.0f;
+    UvEnd.y = 1.0f;
+    float xpos = rc->OriginalComponent->GetX().RenderValue;
+     float ypos = rc->OriginalComponent->GetY().RenderValue;
+      float h = rc->OriginalComponent->GetHeight().RenderValue;
+ float w = rc->OriginalComponent->GetWidth().RenderValue;
+
+
+    float vertices[] = {
+    xpos,     ypos + h,   0.0f, UvStart.x, UvStart.y,
+    xpos,     ypos,       0.0f, UvStart.x, UvEnd.y,
+    xpos + w, ypos,       0.0f, UvEnd.x,   UvEnd.y,
+    xpos + w, ypos + h,   0.0f, UvEnd.x, UvStart.y,
+    
+};
+
+    glBindBuffer(GL_ARRAY_BUFFER, Shader->GetVBO());
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+    
+  for(auto& su : Shader->GetSunUniforms()){
+std::cout << "Enteradi Certooo";
+   switch(su.first){
+   case SunUniformsTypes::uSunPos:{
+   glUniform2f(su.second,rc->X,rc->Y);
+   break;
+   }
+    case SunUniformsTypes::uSunSize:{
+   glUniform2f(su.second,rc->Width,rc->Height);
+   break;
+   }
+   case SunUniformsTypes::uSunProjection:{
+    
+float Ortho[16] = {
+    2.0f / SunCore::instance().WindowWidth,  0, 0, 0,
+    0,  2.0f / SunCore::instance().WindowHeight, 0, 0,
+    0,  0, -1, 0,
+   -1, -1, 0, 1
+};
+  std::cout << "\n Matriz \n";
+  glUniformMatrix4fv(su.second,1,GL_FALSE,Ortho);
+
+    break;
+   }
+   case SunUniformsTypes::uSunTime:{
+    glUniform1f(su.second,t);
+    break;
+   }
+   case SunUniformsTypes::uSunTexture:{
+     
+    glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D,SunCore::instance().SunRenderCore.GetTexture(rc->TextureId)->GPUID);
+   glUniform1i(su.second,0);
+ 
+    ti++;
+    break;
+   }
+ case SunUniformsTypes::uSunTextureMask:{
+     
+    glActiveTexture(GL_TEXTURE1);
+   glBindTexture(GL_TEXTURE_2D,SunCore::instance().SunRenderCore.GetTexture(rc->TextureMask)->GPUID);
+   glUniform1i(su.second,1);
+ 
+    ti++;
+    break;
+   }
+   };
+  };
+
+
+
+  
+   for(auto& fu : FloatUniforms){
+     
+    auto u = Shader->GetUniform(fu.first);
+    float f = fu.second;
+
+    glUniform1f(u->Location,f);
+
+   };
+    
+
+   for(auto& tfu : TwoFloatsUniforms){
+   auto u = Shader->GetUniform(tfu.first);
+    vector2 f = tfu.second;
+
+    glUniform2f(u->Location,f.x,f.y);
+   };
+
+   
+   for(auto& thfu : ThreeFloatUniforms){
+   auto u = Shader->GetUniform(thfu.first);
+    vector3 f = thfu.second;
+
+    glUniform3f(u->Location,f.x,f.y,f.z);
+   };
+
+   
+   for(auto& ffu : FourFloatUniforms){
+   auto u = Shader->GetUniform(ffu.first);
+    vector4 f = ffu.second;
+
+    glUniform4f(u->Location,f.x,f.y,f.z,f.xy);
+   };
+ 
+   for(auto& tu : TexturesUniforms){
+   auto u = Shader->GetUniform(tu.first);
+         glActiveTexture(GL_TEXTURE0 + ti);
+   glBindTexture(GL_TEXTURE_2D,tu.second->GPUID);
+   glUniform1i(u->Location,ti);
+   ti++;
+   };
+
+  switch(BlendMode){
+   case BlendOptions::Alpha:{
+      glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    break;
+   }
+   case BlendOptions::Add:{
+    glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    break;
+   }
+   case BlendOptions::None:{
+        glDisable(GL_BLEND);
+    break;
+   }
+  }
+  
+
+  
+  glDrawArrays(GL_TRIANGLE_FAN,0,4);
+};
+
+
+void Material::AddTextureUniform(std::string Id,std::string TextureId){
+ auto it = SunCore::instance().SunRenderCore.GetTexture(TextureId);
+ TexturesUniforms.emplace(Id,it);
+};
+
+void SunShadersCore::AddShaderToWorld(std::string Id,std::unique_ptr<SunShader> s){
+    auto uSunPos = glGetUniformLocation(s->GetShaderProgram(),"uSunPos");
+    auto uSunSize = glGetUniformLocation(s->GetShaderProgram(),"uSunSize");
+    auto uSunProjection = glGetUniformLocation(s->GetShaderProgram(),"uSunProjection");
+    auto uSunTime = glGetUniformLocation(s->GetShaderProgram(),"uSunTime");
+     auto uSunTexture = glGetUniformLocation(s->GetShaderProgram(),"uSunTexture");
+          auto uSunTextureMask = glGetUniformLocation(s->GetShaderProgram(),"uSunTextureMask");
+    if(uSunPos != -1){
+    s->AddSunUniform(SunUniformsTypes::uSunPos,uSunPos);
+    };
+    if(uSunSize != -1){
+     s->AddSunUniform(SunUniformsTypes::uSunSize,uSunSize);
+    };
+    if(uSunProjection != -1){
+      s->AddSunUniform(SunUniformsTypes::uSunProjection,uSunProjection);
+    }
+    if(uSunTime != -1){
+s->AddSunUniform(SunUniformsTypes::uSunTime,uSunTime);
+    }
+ if(uSunTexture != -1){
+s->AddSunUniform(SunUniformsTypes::uSunTexture,uSunTexture);
+    }
+
+     if(uSunTextureMask != -1){
+s->AddSunUniform(SunUniformsTypes::uSunTextureMask,uSunTextureMask);
+    }
+
+     CreateComponentVAO(s.get());
+    
+
+     Shaders.emplace(Id,std::move(s));
+   };

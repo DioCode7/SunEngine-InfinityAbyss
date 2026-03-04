@@ -6,6 +6,7 @@
 
 
 
+
 void CreateMainWindow(SunEngineConfig& Config){
      SDL_DisplayMode DisplayMode;
      SDL_GetCurrentDisplayMode(0,&DisplayMode);
@@ -62,12 +63,16 @@ void RenderDebug(){
     }
 }
 
-void EngineRender(){
+void EngineRender(float dt,float t){
     glClearColor(0, 0, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
    for (auto& rc : SunCore::instance().SunEngineConfig->Render.RenderVector) {
    rc->OriginalComponent->ResolveComponent();
+   if(rc->Material){
+   rc->Material->Apply(rc,t,dt);
+   }else{
     rc->RenderMethod();   
+   }
    }
 
 
@@ -126,6 +131,79 @@ unsigned int VertexShader = glCreateShader(GL_VERTEX_SHADER);
 
 
 };
+
+
+void CreateComponentVAO(SunShader* sh){
+    unsigned int VAO,VBO;
+
+         glGenVertexArrays(1,&VAO);
+                glGenBuffers(1,&VBO);
+
+
+    glBindVertexArray(VAO);
+
+                glBindBuffer(GL_ARRAY_BUFFER,VBO);
+                glBufferData(GL_ARRAY_BUFFER,5 * 4 * sizeof(float),NULL,GL_STATIC_DRAW);
+
+               glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+                glEnableVertexAttribArray(1);
+
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+            glEnableVertexAttribArray(0);
+
+            glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        sh->SetVAO(VAO);
+        sh->SetVBO(VBO);
+
+  
+};
+
+
+GLuint CreateFullShaderProgram(const char* Vs,const char* Fs){
+
+        
+
+unsigned int VertexShader = glCreateShader(GL_VERTEX_SHADER);
+                glShaderSource(VertexShader,1,&Vs,NULL);
+                glCompileShader(VertexShader);
+
+                int Success;
+                char InfoLog[512];
+                glGetShaderiv(VertexShader,GL_COMPILE_STATUS, &Success);
+                if(!Success){
+                    glGetShaderInfoLog(VertexShader,512,NULL,InfoLog);
+                  
+                }
+
+                unsigned int FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+                glShaderSource(FragmentShader,1,&Fs,NULL);
+                glCompileShader(FragmentShader);
+
+                   glGetShaderiv(FragmentShader,GL_COMPILE_STATUS, &Success);
+                if(!Success){
+                    glGetShaderInfoLog(FragmentShader,512,NULL,InfoLog);
+                  
+                };
+
+                  unsigned int ShaderProgram = glCreateProgram();
+                glAttachShader(ShaderProgram,VertexShader);
+                glAttachShader(ShaderProgram,FragmentShader);
+
+                glLinkProgram(ShaderProgram);
+                glGetProgramiv(ShaderProgram,GL_LINK_STATUS,&Success);
+                if(!Success){
+                    glGetProgramInfoLog(ShaderProgram,512,NULL,InfoLog);
+                }
+
+                
+
+                return ShaderProgram;
+
+
+};
+
 
 
 
@@ -305,6 +383,7 @@ void Renderer::LoadShaders(SunEngineConfig& Config){
                 SunCore::instance().Gl.UniformsLocations.uPosLoc = glGetUniformLocation(ShaderProgram,"uPos");
                    SunCore::instance().Gl.UniformsLocations.uSizeLoc= glGetUniformLocation(ShaderProgram,"uSize");
                    SunCore::instance().Gl.UniformsLocations.uColorLoc = glGetUniformLocation(ShaderProgram,"uColor");
+                   std::cout << "Uniforms Normais:  " <<  SunCore::instance().Gl.UniformsLocations.uColorLoc;
                      SunCore::instance().Gl.UniformsLocations.uShapeType = glGetUniformLocation(ShaderProgram,"ShapeType");
                     SunCore::instance().Gl.UniformsLocations.uUseTexture = glGetUniformLocation(ShaderProgram,"uUseTexture");
                      SunCore::instance().Gl.UniformsLocations.uTexture = glGetUniformLocation(ShaderProgram,"uTexture");
