@@ -16,6 +16,14 @@
 
 
 class SunCore;
+class Component;
+
+
+
+enum class DisplayType{
+Absolute,
+None
+};
 
 
 struct vector2{
@@ -202,8 +210,8 @@ class SunFonts{
 private:
 std::unordered_map<std::string,std::unique_ptr<SunFont>> Fonts;
 public:
-void AddFontToWorld(std::string Id,std::unique_ptr<SunFont> Font){
-  Fonts.emplace(Id,std::move(Font));
+void AddFontToWorld(std::unique_ptr<SunFont> Font){
+  Fonts.emplace(Font->Id,std::move(Font));
 };
 SunFont* GetFont(std::string Id){
  if(Fonts.find(Id) != Fonts.end()){
@@ -237,7 +245,7 @@ std::chrono::duration<float> Elapsed = Now - LastFrame;
 DeltaTime = Elapsed.count();
 LastFrame = Now;
 
-std::chrono::duration<float> Elapsed2 = InitTime - Now;
+std::chrono::duration<float> Elapsed2 = Now - InitTime;
 Time = Elapsed2.count();
 
 };
@@ -293,12 +301,11 @@ class SunEvent{
   virtual ~SunEvent() = default;
 };
 
-enum class TriggerType{
+enum class KeyboardTriggersType{
 KeyDown,
 KeyUp,
 KeyHeld,
-PointerDown,
-PointerUp,
+None
 };
 
 enum class KeyCodes{
@@ -306,21 +313,93 @@ enum class KeyCodes{
  D,
  W,
  S,
+ F1,
+ F2,
+ F3,
+ F4,
+ F5,
+ F6,
+ F7,
+ F8,
+ F9,
+ F10,
+ F11,
+ F12,
+ None
+};
+
+
+
+
+
+enum class MouseButtons{
+  RMB,
+  LMB,
+  None
+};
+
+enum class MouseTriggersType{
+PointerDown,
+PointerUp,
+MouseIn,
+MouseOn,
+MouseOut,
+None
 };
 
 SDL_Keycode TranslateSDLKey(KeyCodes Key);
 SDL_Scancode TranslateSDLScan(KeyCodes Key);
+int TranslateMouseButton(MouseButtons b);
+int TranslateKeyboardEventTrigger(KeyboardTriggersType t);
+int TranslateMouseEventTrigger(MouseTriggersType t);
 
 class SunEventTrigger{
-  public:
- TriggerType Type;
- KeyCodes Key;
+  private:
+ KeyboardTriggersType Type = KeyboardTriggersType::None;
+ KeyCodes Key = KeyCodes::None;
+ bool KeyboardListener = false;
+ bool MouseListener = false;
+ MouseTriggersType MouseTriggerType = MouseTriggersType::None;
+ MouseButtons MouseButton = MouseButtons::None;
+ Component* MouseClickTarget = nullptr;
+ public:
+ const KeyboardTriggersType& GetKeyBoardTriggerType()const{
+  return Type;
+ }
+ const KeyCodes& GetKeyboardKeyCode()const{
+  return Key;
+}
+ const MouseTriggersType& GetMouseTriggerType()const{
+  return MouseTriggerType;
+ }
+ const MouseButtons& GetMouseButtonCode()const{
+  return MouseButton;
+}
+
+
+void SetKeyboardTrigger(KeyboardTriggersType TT,KeyCodes K){
+ Type = TT;
+ Key = K;
+};
+
+void SetMouseTrigger(MouseTriggersType MT,MouseButtons MB,Component* C){
+ MouseTriggerType = MT;
+ MouseButton = MB;
+ MouseClickTarget = C; 
+};
+
+Component* GetComponentTarget(){
+return MouseClickTarget;
+};
 };
 
 class SunListener{
   private:
     SDL_Keycode SDLTrigger;
     SDL_Scancode SDLScanTrigger;
+    int KeyboardEventType = 0;
+    int MouseEventType = 0;
+    int MouseButton = 0;
   public:
 std::string Id;
 SunEventTrigger Trigger;
@@ -330,15 +409,55 @@ std::function<void(SunEvent&)> Fn;
 void SetSDLKey(SDL_Keycode Key){
 SDLTrigger = Key;
 };
-SDL_Keycode GetSDLKey(){
+SDL_Keycode GetSDLKey()const{
 return SDLTrigger;
 };
 void SetSDLScanKey(SDL_Scancode Key){
 SDLScanTrigger = Key;
 };
-SDL_Scancode GetSDLScanKey(){
+SDL_Scancode GetSDLScanKey()const{
 return SDLScanTrigger;
 };
+
+int GetMouseButton(){
+ return MouseButton;
+};
+
+int GetKeyboardEventType(){
+ return KeyboardEventType;
+};
+
+int GetMouseEventType(){
+return MouseEventType;
+};
+
+
+void SetMouseEventType(int i){
+MouseEventType = i;
+};
+
+void SetKeyboardEventType(int i){
+KeyboardEventType = i;
+};
+
+void SetMouseButton(int i){
+switch(i){
+  case 1:
+  MouseButton = SDL_BUTTON_LEFT;
+  break;
+  case 3:
+   MouseButton = SDL_BUTTON_RIGHT;
+  break;
+}
+};
+
+
+
+
+
+
+
+
 };
 
 
@@ -360,7 +479,7 @@ float ValueResolved = 0.0f;
 float RenderValue = 0.0f;
 };
 
-class Component;
+
 class NodeClass{
   public:
   NodeClass(){};
@@ -393,6 +512,86 @@ class RGBAClass{
   float R,G,B,A;
 };
 
+enum class AnimationProperties{
+  None,
+  Alpha,
+  R,
+  G,
+  B,
+  X,
+  Y,
+  Width,
+  Height,
+};
+
+
+enum class EaseTypes{
+None,
+EaseIn,
+EaseOut,
+EaseInOut,
+};
+
+class Animations{
+  private:
+  float StartValue = 0.0;
+  public:
+AnimationProperties Propertie = AnimationProperties::None;
+float Target = 0.0;
+EaseTypes EaseType = EaseTypes::None;
+void Init(float f){
+ StartValue = f;
+}
+float Get(){
+  return StartValue;
+}
+};
+
+class SunAnimation{
+  private:
+std::vector<Animations> InnerAnimations;
+float Duration = 0.0f;
+float StartTime = 0.0f;
+bool Active = false;
+  public:
+
+  void Set(bool b){
+  Active = b;
+  };
+
+  bool Get(){
+   return Active;
+  };
+std::vector<Animations>& GetAnimations(){
+return InnerAnimations;
+};
+
+void AddInnerAnimation(Animations a){
+InnerAnimations.push_back(a);
+};
+
+float GetDuration(){
+return Duration;
+};
+
+void SetDuration(float d){
+Duration = d;
+};
+
+float GetStartTime(){
+  return StartTime;
+}
+
+void SetStartTime();
+
+
+
+
+std::function<void(SunEvent& e)> OnFinish;
+
+
+
+};
 
 
 
@@ -575,6 +774,7 @@ std::unordered_map<std::string,Texture*> TexturesUniforms;
 
 class RenderCore{
     public:
+
     std::unordered_map<std::string,Texture> Textures;
     Texture* GetTexture(std::string Id){
       auto it = Textures.find(Id);
@@ -594,14 +794,47 @@ class RenderCore{
     }
     
 };
+
+class SunAnimationsCore{
+private:
+std::unordered_map<std::string,std::unique_ptr<SunAnimation>> ActiveAnimations;
+
+public:
+std::unordered_map<std::string,std::unique_ptr<SunAnimation>>& GetActiveAnimations(){
+return ActiveAnimations;
+};
+
+void AddActiveAnimation(std::string c,std::unique_ptr<SunAnimation> a){
+ActiveAnimations.emplace(c,std::move(a));
+};
+
+void FinishAnimation(std::string cid){
+ auto* a = ActiveAnimations.find(cid)->second.get();
+ SunEvent e;
+ //a->OnFinish(e);
+ ActiveAnimations.erase(cid);
+};
+
+
+
+};
+
 class SunBrain{
   private:
   std::unordered_map<std::string,std::unique_ptr<SunListener>> Listeners;
 public:
 void NewListener(std::unique_ptr<SunListener> Listener){
   auto Id = Listener.get()->Id;
-  Listener->SetSDLKey(TranslateSDLKey(Listener->Trigger.Key));
-   Listener->SetSDLScanKey(TranslateSDLScan(Listener->Trigger.Key));
+  if(Listener->Trigger.GetKeyBoardTriggerType() != KeyboardTriggersType::None && Listener->Trigger.GetKeyboardKeyCode() != KeyCodes::None){
+  Listener->SetSDLKey(TranslateSDLKey(Listener->Trigger.GetKeyboardKeyCode()));
+   Listener->SetSDLScanKey(TranslateSDLScan(Listener->Trigger.GetKeyboardKeyCode()));
+   Listener->SetKeyboardEventType(TranslateKeyboardEventTrigger(Listener->Trigger.GetKeyBoardTriggerType()));
+  }
+  if(Listener->Trigger.GetMouseTriggerType() != MouseTriggersType::None && Listener->Trigger.GetMouseButtonCode() != MouseButtons::None){
+    Listener->SetMouseEventType(TranslateMouseEventTrigger(Listener->Trigger.GetMouseTriggerType()));
+    Listener->SetMouseButton(TranslateMouseButton(Listener->Trigger.GetMouseButtonCode()));
+  };
+
  Listeners.emplace(Id,std::move(Listener));
 };
 void DeleteListener(std::string Id){
@@ -880,6 +1113,34 @@ void PhysicUpdate(float DeltaTime = 0.0f);
 
 };
 
+
+
+class PopUpAdditionalConfigs{
+public:
+std::string Font;
+std::string Text;
+Component* Parent = nullptr;
+};
+
+
+class PopUpComponent{
+private:
+Component* PopUpContainer = nullptr;
+std::unordered_map<std::string,Component*> PopUpChildrens;
+public:
+Scene* OwnerScene = nullptr;
+void SetPopUpContainer(std::unique_ptr<Component> c,ComponentType ct);
+
+void AddNewChildren(std::unique_ptr<Component> c,ComponentType ct,PopUpAdditionalConfigs config);
+
+void ShowPopUp();
+
+void DisablePopUp();
+
+DisplayType GetDisplay();
+
+};
+
 class SunWorld{
   private:
   SunWorld(){};
@@ -887,7 +1148,36 @@ class SunWorld{
   std::unordered_map<std::string,std::unique_ptr<Component>> WorldComponents;
   std::unordered_map<std::string,Component*> BodysComponents;
   std::unordered_map<std::string,std::unique_ptr<Material>> Materials;
+  std::unordered_map<std::string,std::unique_ptr<PopUpComponent>> PopUps;
   public:
+ 
+   void AddPopUpToWorld(std::string id, std::unique_ptr<PopUpComponent> p){
+   PopUps.emplace(id,std::move(p));
+   }
+
+   void ShowPopUp(std::string id){
+      auto it = PopUps.find(id);
+    if(it != PopUps.end()){
+    it->second->ShowPopUp();
+    }
+   };
+
+   
+   void DisablePopUp(std::string id){
+      auto it = PopUps.find(id);
+    if(it != PopUps.end()){
+    it->second->DisablePopUp();
+    }
+   };
+
+   PopUpComponent* GetPopUp(std::string id){
+    auto it = PopUps.find(id);
+    if(it != PopUps.end()){
+    return it->second.get();
+    }
+    return nullptr;
+   };
+
  const std::unordered_map<std::string,std::unique_ptr<SunBodys>>& GetStaticBodysMap()const {
     return StaticBodys;
    };
@@ -967,9 +1257,10 @@ class SunCore {
     SunBrain SunBrain;
     SunBodysControl BodysControl;
     SunWorld& SunWorld = SunWorld.instance();
-    SunTime* SunTime;
+    SunTime SunTime;
     SunFonts SunFontsControl;
     SunShadersCore SunShaders;
+    SunAnimationsCore SunAnimations;
     
 
     static SunCore& instance(){
@@ -1146,6 +1437,24 @@ TransformOriginX();
  };
  }
 
+ if(LastDisplay != RenderDisplay){
+  LastDisplay = RenderDisplay;
+  if(RenderDisplay == DisplayType::None){
+    for(auto& c : Owner->Childrens){
+   c->ComponentClass->SetRenderDisplay(RenderDisplay);
+    }
+  }
+ }
+
+ if(Owner){
+  if(Owner->Parent){
+    if(Owner->Parent->ComponentClass->GetRenderDisplay() == DisplayType::None){
+      SetDisplay(DisplayType::None);
+      RenderDisplay = DisplayType::None;
+
+    }
+  }
+ }
 
  UpdateRC();
  Dirty = false;
@@ -1188,6 +1497,8 @@ float ay = PosY.ValueResolved;
     break;
   }
  }
+
+ 
 };
 
  void UpdateRC(){
@@ -1296,6 +1607,7 @@ float py = 0.0f;
 if(Owner->Parent)
 {
     px = Owner->Parent->ComponentClass->GetX().RenderValue;
+    
     pw = Owner->Parent->ComponentClass->GetWidth().ValueResolved;
     py = Owner->Parent->ComponentClass->GetY().RenderValue;
     ph = Owner->Parent->ComponentClass->GetHeight().ValueResolved;
@@ -1307,12 +1619,15 @@ if(TextAlingX == Align::Start)
 }
 else if(TextAlingX == Align::Center)
 {
-    float parentCenter = px + (pw / 2.0f);
+
+   float parentCenter = px + (pw / 2.0f);
     x = parentCenter - (tw / 2.0f);
+
+   
 }
 else if(TextAlingX == Align::End)
 {
-    x = px + pw - tw;
+    x = (px + pw) - tw;
 }
 
 if(TextAlingY == Align::Start)
@@ -1332,8 +1647,8 @@ else if(TextAlingY == Align::End)
 std::cout << "\n  Align  " << x << " , "<< PosY.ValueResolved << "  \n  ";
 PosX.ValueResolved = x;
 PosY.ValueResolved = y;
-TransformOriginX();
-TransformOriginY();
+PosX.RenderValue = x;
+PosY.RenderValue = y;
 UpdateRC();
   };
  };
@@ -1526,7 +1841,17 @@ UpdateRC();
 
   void SetTextAlingX(Align A){
    TextAlingX = A;
+   Dirty = true;
   }; 
+
+  vector2 GetWorldCell(){
+     return WorldCell;
+  };
+
+  void SetWorldCell(float x,float y){
+  WorldCell.x = x;
+  WorldCell.y = y;
+  };
 
     Align GetTextAlignY()const{
   return TextAlingY;
@@ -1538,7 +1863,40 @@ UpdateRC();
 
   void SetTextAlingY(Align A){
    TextAlingY = A;
+   Dirty = true;
   }; 
+
+  void SetDisplay(DisplayType d){
+  Display = d;
+  if(Owner){
+  if(Owner->Parent){
+    if(Owner->Parent->ComponentClass->GetRenderDisplay() != DisplayType::None){
+  RenderDisplay = Display;
+    }
+    
+  }else{
+ RenderDisplay = Display;
+  }
+}
+  Dirty = true;
+};
+
+DisplayType GetDisplay(){
+return Display;
+};
+
+
+DisplayType GetRenderDisplay(){
+return RenderDisplay;
+};
+
+
+  void SetRenderDisplay(DisplayType d){
+  RenderDisplay = d;
+  Dirty = true;
+};
+
+
   private:
   std::string Id;
   std::string Texture;
@@ -1560,7 +1918,10 @@ UpdateRC();
    ComponentType Type;
    SunFont* Font = nullptr;
    std::string Text = "None";
-  
+   vector2 WorldCell;
+   DisplayType Display = DisplayType::Absolute;
+   DisplayType LastDisplay = Display;
+   DisplayType RenderDisplay = Display;
   
    
 

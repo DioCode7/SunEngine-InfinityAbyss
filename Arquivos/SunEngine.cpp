@@ -15,7 +15,8 @@
 
 auto& Core = SunCore::instance();
 
-SunTime Time;
+SunTime& Time = SunCore::instance().SunTime;
+
 
 void SunEngineGameLoop(){
 

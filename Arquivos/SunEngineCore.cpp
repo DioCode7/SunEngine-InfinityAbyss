@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include "SunEngineCore.h"
 #include "SunRender.h"
+#include "SunFunctions.h"
 
 void Scene::SceneConfigs() {}
 void Scene::OnLoad() {}
@@ -30,6 +31,64 @@ SDL_Keycode TranslateSDLKey(KeyCodes Key){
     return SDLK_s;
     break;
   }
+    case KeyCodes::F1:{
+    return SDLK_F1;
+    break;
+  }
+   case KeyCodes::F2:{
+    return SDLK_F2;;
+    break;
+  }
+ case KeyCodes::F3:{
+    return SDLK_F3;;
+    break;
+  }
+
+   case KeyCodes::F4:{
+    return SDLK_F4;
+    break;
+  }
+
+   case KeyCodes::F5:{
+    return SDLK_F5;
+    break;
+  }
+
+   case KeyCodes::F6:{
+    return SDLK_F6;
+    break;
+  }
+
+   case KeyCodes::F7:{
+    return SDLK_F7;
+    break;
+  }
+
+   case KeyCodes::F8:{
+    return SDLK_F8;
+    break;
+  }
+
+   case KeyCodes::F9:{
+    return SDLK_F9;
+    break;
+  }
+
+   case KeyCodes::F10:{
+return SDLK_F10;
+    break;
+  }
+
+   case KeyCodes::F11:{
+    return SDLK_F11;
+    break;
+  }
+
+   case KeyCodes::F12:{
+    return SDLK_F12;
+    break;
+  }
+
 
  };
  return SDLK_UNKNOWN;
@@ -54,6 +113,65 @@ SDL_Scancode TranslateSDLScan(KeyCodes Key){
     return SDL_SCANCODE_W;
     break;
   }
+  case KeyCodes::F1:{
+    return SDL_SCANCODE_F1;
+    break;
+  }
+   case KeyCodes::F2:{
+    return SDL_SCANCODE_F2;
+    break;
+  }
+ case KeyCodes::F3:{
+    return SDL_SCANCODE_F3;
+    break;
+  }
+
+   case KeyCodes::F4:{
+    return SDL_SCANCODE_F4;
+    break;
+  }
+
+   case KeyCodes::F5:{
+    return SDL_SCANCODE_F5;
+    break;
+  }
+
+   case KeyCodes::F6:{
+    return SDL_SCANCODE_F6;
+    break;
+  }
+
+   case KeyCodes::F7:{
+    return SDL_SCANCODE_F7;
+    break;
+  }
+
+    case KeyCodes::F8:{
+    return SDL_SCANCODE_F8;
+    break;
+  }
+
+   case KeyCodes::F9:{
+    return SDL_SCANCODE_F9;
+    break;
+  }
+
+   case KeyCodes::F10:{
+    return SDL_SCANCODE_F10;
+    break;
+  }
+
+   case KeyCodes::F11:{
+    return SDL_SCANCODE_F11;
+    break;
+  }
+
+   case KeyCodes::F12:{
+    return SDL_SCANCODE_F12;
+    break;
+  }
+
+
 
  };
  return SDL_SCANCODE_UNKNOWN;
@@ -888,3 +1006,133 @@ s->AddSunUniform(SunUniformsTypes::uSunTextureMask,uSunTextureMask);
 
      Shaders.emplace(Id,std::move(s));
    };
+
+
+
+  int TranslateMouseButton(MouseButtons b){
+   switch(b){
+    case MouseButtons::LMB:
+    return 1;
+    break;
+    case MouseButtons::RMB:
+    return 2;
+    break;
+   }
+   return 0;
+  };
+
+
+  int TranslateKeyboardEventTrigger(KeyboardTriggersType t){
+switch(t){
+  case KeyboardTriggersType::KeyDown:
+  return SDL_KEYDOWN;
+  break;
+   case KeyboardTriggersType::KeyUp:
+  return SDL_KEYUP;
+  break;
+   case KeyboardTriggersType::KeyHeld:
+  return 0;
+  break;
+}
+return 0;
+  };
+int TranslateMouseEventTrigger(MouseTriggersType t){
+  switch(t){
+ case MouseTriggersType::PointerDown:
+  return SDL_MOUSEBUTTONDOWN;
+  break;
+   case MouseTriggersType::PointerUp:
+  return SDL_MOUSEBUTTONUP;
+  break;
+   case MouseTriggersType::MouseIn:
+  return SDL_MOUSEMOTION;
+  break;
+  case MouseTriggersType::MouseOut:
+  return SDL_MOUSEMOTION;
+  break;
+  case MouseTriggersType::MouseOn:
+  return SDL_MOUSEMOTION;
+  break;
+}
+return 0;
+};
+
+
+void SunAnimation::SetStartTime(){
+  if(!Active){
+StartTime = SunCore::instance().SunTime.GetTime();
+Active = true;  
+}
+};
+
+void PopUpComponent::SetPopUpContainer(std::unique_ptr<Component> c,ComponentType ct){
+  SunRender sr;
+switch(ct){
+  case ComponentType::Rectangle:{
+    std::string id = c->GetId();
+    sr.AddRectangle(std::move(c),OwnerScene);
+    PopUpContainer = SunCore::instance().SunWorld.GetWorldComponentsMap().find(id)->second.get();
+  PopUpContainer->SetDisplay(DisplayType::None);
+   break;
+  }
+   case ComponentType::Sprite:{
+    std::string id = c->GetId();
+    sr.AddSprite(std::move(c),OwnerScene);
+    PopUpContainer = SunCore::instance().SunWorld.GetWorldComponentsMap().find(id)->second.get();
+    PopUpContainer->SetDisplay(DisplayType::None);
+   break;
+  }
+   case ComponentType::Circle:{
+    std::string id = c->GetId();
+    sr.AddCircle(std::move(c),OwnerScene);
+    PopUpContainer = SunCore::instance().SunWorld.GetWorldComponentsMap().find(id)->second.get();
+    PopUpContainer->SetDisplay(DisplayType::None);
+   break;
+  }
+}
+};
+
+
+void PopUpComponent::AddNewChildren(std::unique_ptr<Component> c,ComponentType ct,PopUpAdditionalConfigs config){
+SunRender sr;
+switch(ct){
+  case ComponentType::Rectangle:{
+    std::string id = c->GetId();
+    sr.AddRectangle(std::move(c),OwnerScene,config.Parent);
+     PopUpChildrens.emplace(id,SunCore::instance().SunWorld.GetWorldComponentsMap().find(id)->second.get());
+   break;
+  }
+   case ComponentType::Sprite:{
+    std::string id = c->GetId();
+    sr.AddSprite(std::move(c),OwnerScene,config.Parent);
+   PopUpChildrens.emplace(id,SunCore::instance().SunWorld.GetWorldComponentsMap().find(id)->second.get());
+   break;
+  }
+   case ComponentType::Circle:{
+    std::string id = c->GetId();
+    sr.AddCircle(std::move(c),OwnerScene,config.Parent);
+ PopUpChildrens.emplace(id,SunCore::instance().SunWorld.GetWorldComponentsMap().find(id)->second.get());
+   break;
+  }
+   case ComponentType::Text:{
+    std::string id = c->GetId();
+    sr.AddText(std::move(c),config.Font,config.Text,OwnerScene,config.Parent);
+ PopUpChildrens.emplace(id,SunCore::instance().SunWorld.GetWorldComponentsMap().find(id)->second.get());
+   break;
+  }
+}
+};
+
+
+void PopUpComponent::ShowPopUp(){
+    PopUpContainer->SetDisplay(DisplayType::Absolute);
+};
+
+
+void PopUpComponent::DisablePopUp(){
+    PopUpContainer->SetDisplay(DisplayType::None);
+};
+
+DisplayType PopUpComponent::GetDisplay(){
+return PopUpContainer->GetRenderDisplay();
+};

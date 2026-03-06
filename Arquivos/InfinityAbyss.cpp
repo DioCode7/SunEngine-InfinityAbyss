@@ -72,6 +72,9 @@ int main(int argc, char** argv)
      
     };
     void OnLoad() override{
+
+
+       
     SunTextures.NewTexture("TexturaTeste","./Assets/TestAssets/TestAsset.png");
     SunTextures.NewTexture("TexturaTeste2","./Assets/TestAssets/TestAsset2.jpg");
   SunTextures.NewTexture("DioTesteTexture","./Assets/TestAssets/DioTexture.png");
@@ -93,6 +96,7 @@ int main(int argc, char** argv)
       SunTextures.NewTexture("InfinityAbyssMenuArtTextureMist3","./Assets/Arts/MenuArt/InfinityAbyss - MenuBackground1 - Mist3.png");
         SunTextures.NewTexture("InfinityAbyssMenuArtTextureMist4","./Assets/Arts/MenuArt/InfinityAbyss - MenuBackground1 - Mist4.png");
   SunTextures.NewTexture("InfinityAbyssMenuArtTextureTree","./Assets/Arts/MenuArt/InfinityAbyss - MenuBackground1 - Tree.png");
+   SunTextures.NewTexture("InfinityAbyssMenuArtTextureTreeMask","./Assets/Arts/MenuArt/InfinityAbyss - MenuBackground1 - TreeMask.png");
   SunTextures.NewTexture("InfinityAbyssMenuArtTextureHouseLight1","./Assets/Arts/MenuArt/InfinityAbyss - MenuBackground1 - HouseLight1.png");
   SunTextures.NewTexture("InfinityAbyssMenuArtTextureHouseLight2","./Assets/Arts/MenuArt/InfinityAbyss - MenuBackground1 - HouseLight2.png");
 SunTextures.NewTexture("InfinityAbyssMenuArtTextureCabin","./Assets/Arts/MenuArt/InfinityAbyss - MenuBackground1 - Cabin.png");
@@ -104,7 +108,19 @@ SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassFrontMask","./Assets/Art
                   SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassBack1Mask","./Assets/Arts/MenuArt/InfinityAbyss - MenuBackground1 - GrassBack1Mask.png");
     SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassBack2Mask","./Assets/Arts/MenuArt/InfinityAbyss - MenuBackground1 - GrassBack2Mask.png");
       SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassBack3Mask","./Assets/Arts/MenuArt/InfinityAbyss - MenuBackground1 - GrassBack3Mask.png");
-            };
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    };
     void OnInit() override{
 
 
@@ -127,28 +143,49 @@ SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassFrontMask","./Assets/Art
          MenuContainer->SetRGBA(0.3f,0.3f,0.3f,1.0f);
          SunRendering.AddRectangle(std::move(MenuContainer),this);
          
-         auto CinzelFont = std::make_unique<SunFont>();
+auto CinzelSmallFont = std::make_unique<SunFont>();
+         CinzelSmallFont->Id = "CinzelSmall";
+         CinzelSmallFont->FontPath = "./Assets/Fonts/CinzelDecorative-Regular.ttf";
+         CinzelSmallFont->Height = 13;
+    
+     
+       SunTextControl.AddFont(std::move(CinzelSmallFont));
+         
+        auto CinzelFont = std::make_unique<SunFont>();
          CinzelFont->Id = "Cinzel";
-         CinzelFont->FontPath = "./Assets/Fonts/CinzelDecorative-Bold.ttf";
-         CinzelFont->Height = 31;
+         CinzelFont->FontPath = "./Assets/Fonts/CinzelDecorative-Regular.ttf";
+         CinzelFont->Height = 24;
     
      
        SunTextControl.AddFont(std::move(CinzelFont));
 
+
+       auto FullScreenListener = std::make_unique<SunListener>();
+          FullScreenListener->Fn = [](SunEvent& e){
+              WindowManipulate("LeaveFullScreen");
+          };
+          FullScreenListener->Id = "FullScreenListener";
+          SunEventTrigger FullScreenListenerTrigger;
+          FullScreenListenerTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyDown,KeyCodes::F11);
+          FullScreenListener->Trigger = FullScreenListenerTrigger;
+          FullScreenListener->UseFn = true;
+          SunCore::instance().SunBrain.NewListener(std::move(FullScreenListener));
+       
+
      UnitClass PlayButtonX;
      PlayButtonX.Unit = UnitType::Percent;
-     PlayButtonX.Value = 0.1f;
+     PlayButtonX.Value = 0.165f;
    UnitClass PlayButtonY;
      PlayButtonY.Unit = UnitType::Percent;
-     PlayButtonY.Value = 0.35f;
+     PlayButtonY.Value = 0.26f;
   UnitClass PlayButtonW;
      PlayButtonW.Unit = UnitType::Percent;
      PlayButtonW.Value = 0.15f;
     UnitClass PlayButtonH;
      PlayButtonH.Unit = UnitType::Percent;
      PlayButtonH.Value = 0.06f;
-     auto PlayButton = std::make_unique<Component>("PlayButton",PlayButtonW,PlayButtonH,PlayButtonX,PlayButtonY);
-     PlayButton->SetRGBA(0.1,0.4,0.0,0.4);
+     auto PlayButton = std::make_unique<Component>("PlayButton",PlayButtonW,PlayButtonH,PlayButtonX,PlayButtonY,OriginClass::Center);
+     PlayButton->SetRGBA(0.1,0.4,0.0,0.0);
      SunRendering.AddRectangle(
       std::move(PlayButton),
       this
@@ -158,18 +195,18 @@ SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassFrontMask","./Assets/Art
      
      UnitClass OptionsButtonX;
      OptionsButtonX.Unit = UnitType::Percent;
-     OptionsButtonX.Value = 0.1f;
+     OptionsButtonX.Value = 0.165f;
    UnitClass OptionsButtonY;
      OptionsButtonY.Unit = UnitType::Percent;
-     OptionsButtonY.Value = 0.47f;
+     OptionsButtonY.Value = 0.33f;
   UnitClass OptionsButtonW;
      OptionsButtonW.Unit = UnitType::Percent;
      OptionsButtonW.Value = 0.15f;
     UnitClass OptionsButtonH;
      OptionsButtonH.Unit = UnitType::Percent;
      OptionsButtonH.Value = 0.06f;
-     auto OptionsButton = std::make_unique<Component>("OptionsButton",OptionsButtonW,OptionsButtonH,OptionsButtonX,OptionsButtonY);
-     OptionsButton->SetRGBA(0.1,0.4,0.0,0.4);
+     auto OptionsButton = std::make_unique<Component>("OptionsButton",OptionsButtonW,OptionsButtonH,OptionsButtonX,OptionsButtonY,OriginClass::Center);
+     OptionsButton->SetRGBA(0.1,0.4,0.0,0.0);
      SunRendering.AddRectangle(
       std::move(OptionsButton),
       this
@@ -179,18 +216,18 @@ SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassFrontMask","./Assets/Art
      
      UnitClass CreditsButtonX;
      CreditsButtonX.Unit = UnitType::Percent;
-     CreditsButtonX.Value = 0.1f;
+     CreditsButtonX.Value = 0.165f;
    UnitClass CreditsButtonY;
      CreditsButtonY.Unit = UnitType::Percent;
-     CreditsButtonY.Value = 0.59f;
+     CreditsButtonY.Value = 0.40f;
   UnitClass CreditsButtonW;
      CreditsButtonW.Unit = UnitType::Percent;
      CreditsButtonW.Value = 0.15f;
     UnitClass CreditsButtonH;
      CreditsButtonH.Unit = UnitType::Percent;
      CreditsButtonH.Value = 0.06f;
-     auto CreditsButton = std::make_unique<Component>("CreditsButton",CreditsButtonW,CreditsButtonH,CreditsButtonX,CreditsButtonY);
-     CreditsButton->SetRGBA(0.1,0.4,0.0,0.4);
+     auto CreditsButton = std::make_unique<Component>("CreditsButton",CreditsButtonW,CreditsButtonH,CreditsButtonX,CreditsButtonY,OriginClass::Center);
+     CreditsButton->SetRGBA(0.1,0.4,0.0,0.0);
      SunRendering.AddRectangle(
       std::move(CreditsButton),
       this
@@ -200,18 +237,18 @@ SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassFrontMask","./Assets/Art
   
      UnitClass LeaveButtonX;
      LeaveButtonX.Unit = UnitType::Percent;
-     LeaveButtonX.Value = 0.1f;
+     LeaveButtonX.Value = 0.165f;
    UnitClass LeaveButtonY;
      LeaveButtonY.Unit = UnitType::Percent;
-     LeaveButtonY.Value = 0.71f;
+     LeaveButtonY.Value = 0.47f;
   UnitClass LeaveButtonW;
      LeaveButtonW.Unit = UnitType::Percent;
      LeaveButtonW.Value = 0.15f;
     UnitClass LeaveButtonH;
      LeaveButtonH.Unit = UnitType::Percent;
      LeaveButtonH.Value = 0.06f;
-     auto LeaveButton = std::make_unique<Component>("LeaveButton",LeaveButtonW,LeaveButtonH,LeaveButtonX,LeaveButtonY);
-     LeaveButton->SetRGBA(0.1,0.4,0.0,0.4);
+     auto LeaveButton = std::make_unique<Component>("LeaveButton",LeaveButtonW,LeaveButtonH,LeaveButtonX,LeaveButtonY,OriginClass::Center);
+     LeaveButton->SetRGBA(0.1,0.4,0.0,0.0);
      SunRendering.AddRectangle(
       std::move(LeaveButton),
       this
@@ -396,21 +433,7 @@ SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassFrontMask","./Assets/Art
      
 
      
-       auto InfinityAbyssMenuArtHouseLight1 = std::make_unique<Component>(
-      "InfinityAbyssMenuArtHouseLight1",
-       InfinityAbyssMenuArtW,
-       InfinityAbyssMenuArtH,
-        InfinityAbyssMenuArtX,
-       InfinityAbyssMenuArtY,
-       OriginClass::Start,
-       OriginClass::Start
-      );
 
-     InfinityAbyssMenuArtHouseLight1->SetTexture("InfinityAbyssMenuArtTextureHouseLight1");
-     SunRendering.AddSprite(
-      std::move(InfinityAbyssMenuArtHouseLight1),
-      this
-     );
 
      
        auto InfinityAbyssMenuArtTree = std::make_unique<Component>(
@@ -429,7 +452,8 @@ SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassFrontMask","./Assets/Art
       this
      );
 
-
+  auto& MenuTree = SunCore::instance().SunWorld.GetWorldComponentsMap().find("InfinityAbyssMenuArtTree")->second;
+     MenuTree->SetTextureMask("InfinityAbyssMenuArtTextureTreeMask");
 
 
      
@@ -511,6 +535,21 @@ SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassFrontMask","./Assets/Art
       this
      );
 
+            auto InfinityAbyssMenuArtHouseLight1 = std::make_unique<Component>(
+      "InfinityAbyssMenuArtHouseLight1",
+       InfinityAbyssMenuArtW,
+       InfinityAbyssMenuArtH,
+        InfinityAbyssMenuArtX,
+       InfinityAbyssMenuArtY,
+       OriginClass::Start,
+       OriginClass::Start
+      );
+
+     InfinityAbyssMenuArtHouseLight1->SetTexture("InfinityAbyssMenuArtTextureHouseLight1");
+     SunRendering.AddSprite(
+      std::move(InfinityAbyssMenuArtHouseLight1),
+      this
+     );
 
        auto InfinityAbyssMenuArtMidGrass1 = std::make_unique<Component>(
       "InfinityAbyssMenuArtMidGrass1",
@@ -741,7 +780,7 @@ SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassFrontMask","./Assets/Art
   
      UnitClass InfinityAbyssLetterX;
      InfinityAbyssLetterX.Unit = UnitType::Percent;
-     InfinityAbyssLetterX.Value = 0.05f;
+     InfinityAbyssLetterX.Value = 0.17f;
    UnitClass InfinityAbyssLetterY;
      InfinityAbyssLetterY.Unit = UnitType::Percent;
      InfinityAbyssLetterY.Value = 0.12f;
@@ -757,7 +796,7 @@ SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassFrontMask","./Assets/Art
        InfinityAbyssLetterH,
         InfinityAbyssLetterX,
        InfinityAbyssLetterY,
-       OriginClass::Start
+       OriginClass::Center
       );
 
      InfinityAbyssLetter->SetTexture("InfinityAbyssLetterTexture");
@@ -1316,6 +1355,114 @@ MenuCabin->AddMaterial("MenuCabinMaterial");
 
 
 
+        const char* MenuTreeVertexShader = R"(
+        #version 330 core
+
+                layout (location = 0) in vec3 aPos;
+                layout (location = 1) in vec2 aUV;
+
+                out vec2 vUV;
+
+                uniform vec2 uSunPos;     
+                uniform vec2 uSunSize;
+                uniform mat4 uSunProjection;
+                    
+                    
+                void main(){
+              
+              gl_Position = uSunProjection * vec4(aPos.xy, 0.0, 1.0);
+              vUV = aUV;
+               
+                }
+        
+        )";
+
+
+     const char* MenuTreeFragmentShader = R"(
+      #version 330 core
+
+      in vec2 vUV;
+
+
+   
+      uniform sampler2D uSunTexture;
+      uniform sampler2D uSunTextureMask;
+      uniform float uSunTime;
+      out vec4 FragColor;
+
+      float hash(vec2 p){
+          return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453);
+      };
+
+      float noise(vec2 p){
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+
+        float a = hash(i);
+        float b = hash(i + vec2(1.0,0.0));
+        float c = hash(i + vec2(0.0,1.0));
+        float d = hash(i + vec2(1.0,1.0));
+
+        vec2 u = f * f * (3.0 - 2.0 * f);
+
+        return mix(a,b,u.x) +
+        (c - a) * u.y * (1.0 -u.x) +
+        (d- b) * u.x * u.y;
+      };
+
+      float fbm(vec2 p)
+{
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+
+    for(int i = 0; i < 5; i++)
+    {
+        value += amplitude * noise(p * frequency);
+        frequency *= 2.0;
+        amplitude *= 0.5;
+    }
+
+    return value;
+}
+
+      void main(){
+        vec2 uv = vUV;
+        float t = sin(uSunTime * 0.2);
+
+        
+          vec4 mask = texture(uSunTextureMask,uv);
+
+                    float Noise = fbm((uv * 50.0 * (mask.r)) + uSunTime * 0.5);
+                    if(mask.r > 0.0){
+          uv.y -= (Noise * 0.014);
+    }
+          
+          vec4 tex = texture(uSunTexture,uv);
+
+        
+          FragColor = tex;
+      }
+          
+          )";
+
+          
+
+     std::unique_ptr<SunShader>MenuTreeShader = std::make_unique<SunShader>();
+     
+    GLuint MenuTreeShaderProgram = CreateFullShaderProgram(MenuTreeVertexShader,MenuTreeFragmentShader);
+    MenuTreeShader->SetShaderProgram(MenuTreeShaderProgram);
+
+    SunCore::instance().SunShaders.AddShaderToWorld("MenuTreeShader",std::move(MenuTreeShader));
+   auto* RMenuTreeShader =  SunCore::instance().SunShaders.GetShader("MenuTreeShader");
+
+    SunCore::instance().SunWorld.AddMaterialToWorld("MenuTreeMaterial","MenuTreeShader");
+     Material* MenuTreeMaterial = SunCore::instance().SunWorld.GetMaterial("MenuTreeMaterial");
+
+
+MenuTree->AddMaterial("MenuTreeMaterial");
+
+
 
 
 
@@ -1335,7 +1482,7 @@ MenuCabin->AddMaterial("MenuCabinMaterial");
         PlayTextH.Value = 0.0f;
        auto PlayTextComponent = std::make_unique<Component>("PlayText",PlayTextW,PlayTextH,PlayTextX,PlayTextY,OriginClass::Start,OriginClass::Start);
        PlayTextComponent->SetRGBA(1.0f,1.0f,1.0f,1.0f);
-       PlayTextComponent->SetCharatersMargin(0.0f,0);
+       PlayTextComponent->SetCharatersMargin(5.0f,0);
        PlayTextComponent->SetTextAlingX(Align::Center);
         PlayTextComponent->SetTextAlingY(Align::Center);
        SunRendering.AddText(
@@ -1346,7 +1493,171 @@ MenuCabin->AddMaterial("MenuCabinMaterial");
         SunCore::instance().SunWorld.GetWorldComponentsMap().find("PlayButton")->second.get()
       );
 
+         auto OptionsTextComponent = std::make_unique<Component>("OptionsText",PlayTextW,PlayTextH,PlayTextX,PlayTextY,OriginClass::Start,OriginClass::Start);
+       OptionsTextComponent->SetRGBA(1.0f,1.0f,1.0f,1.0f);
+       OptionsTextComponent->SetCharatersMargin(5.0f,0);
+       OptionsTextComponent->SetTextAlingX(Align::Center);
+        OptionsTextComponent->SetTextAlingY(Align::Center);
+       SunRendering.AddText(
+        std::move(OptionsTextComponent),
+        "Cinzel",
+        "Opcoes",
+        this,
+        SunCore::instance().SunWorld.GetWorldComponentsMap().find("OptionsButton")->second.get()
+      );
 
+      
+         auto CreditsTextComponent = std::make_unique<Component>("CreditsText",PlayTextW,PlayTextH,PlayTextX,PlayTextY,OriginClass::Start,OriginClass::Start);
+       CreditsTextComponent->SetRGBA(1.0f,1.0f,1.0f,1.0f);
+       CreditsTextComponent->SetCharatersMargin(5.0f,0);
+       CreditsTextComponent->SetTextAlingX(Align::Center);
+        CreditsTextComponent->SetTextAlingY(Align::Center);
+       SunRendering.AddText(
+        std::move(CreditsTextComponent),
+        "Cinzel",
+        "Creditos",
+        this,
+        SunCore::instance().SunWorld.GetWorldComponentsMap().find("CreditsButton")->second.get()
+      );
+
+      
+         auto LeaveTextComponent = std::make_unique<Component>("LeaveText",PlayTextW,PlayTextH,PlayTextX,PlayTextY,OriginClass::Start,OriginClass::Start);
+       LeaveTextComponent->SetRGBA(1.0f,1.0f,1.0f,1.0f);
+       LeaveTextComponent->SetCharatersMargin(5.0f,0);
+       LeaveTextComponent->SetTextAlingX(Align::Center);
+        LeaveTextComponent->SetTextAlingY(Align::Center);
+       SunRendering.AddText(
+        std::move(LeaveTextComponent),
+        "Cinzel",
+        "Sair",
+        this,
+        SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeaveButton")->second.get()
+      );
+
+      
+  
+     UnitClass FooterCreditsContainerX;
+     FooterCreditsContainerX.Unit = UnitType::Percent;
+     FooterCreditsContainerX.Value = 0.98f;
+     UnitClass FooterCreditsContainerY;
+     FooterCreditsContainerY.Unit = UnitType::Percent;
+     FooterCreditsContainerY.Value = 1.0f;
+     UnitClass FooterCreditsContainerW;
+     FooterCreditsContainerW.Unit = UnitType::Percent;
+     FooterCreditsContainerW.Value = 0.4f;
+      UnitClass FooterCreditsContainerH;
+     FooterCreditsContainerH.Unit = UnitType::Percent;
+     FooterCreditsContainerH.Value = 0.05f;
+     auto FooterCreditsContainer = std::make_unique<Component>("FooterCreditsContainer",
+      FooterCreditsContainerW,
+      FooterCreditsContainerH,
+      FooterCreditsContainerX,
+      FooterCreditsContainerY,
+      OriginClass::End,
+      OriginClass::End);
+      FooterCreditsContainer->SetRGBA(1.0f,0.0f,0.0f,0.0f);
+      SunRendering.AddRectangle(
+        std::move(FooterCreditsContainer),
+        this
+      );
+
+      
+     UnitClass FooterCreditsTextX;
+     UnitClass FooterCreditsTextY;
+     UnitClass FooterCreditsTextW;
+      UnitClass FooterCreditsTextH;
+     auto FooterCreditsText = std::make_unique<Component>("FooterCreditsText",
+    PlayTextW,PlayTextH,PlayTextX,PlayTextY,
+      OriginClass::Start,
+      OriginClass::Start);
+      FooterCreditsText->SetCharatersMargin(1.0f,0.0f);
+      
+      SunRendering.AddText(
+        std::move(FooterCreditsText),
+        "CinzelSmall",
+        "@LucSun 2026. Todos Os Direitos Reservados. Ver. 0.1 Alpha",
+        this,
+        SunCore::instance().SunWorld.GetWorldComponentsMap().find("FooterCreditsContainer")->second.get()
+      );
+
+      SunCore::instance().SunWorld.GetWorldComponentsMap().find("FooterCreditsText")->second->SetTextAlingX(Align::End);
+   SunCore::instance().SunWorld.GetWorldComponentsMap().find("FooterCreditsText")->second->SetTextAlingY(Align::Center);
+     
+
+
+  auto LeaveButtonListener = std::make_unique<SunListener>();
+  SunEventTrigger LeaveButtonListenerTrigger;
+  LeaveButtonListenerTrigger.SetMouseTrigger(MouseTriggersType::PointerDown,MouseButtons::LMB,
+  SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeaveButton")->second.get());
+  LeaveButtonListenerTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyDown,KeyCodes::A);
+  LeaveButtonListener->UseFn = true;
+  LeaveButtonListener->Trigger = LeaveButtonListenerTrigger;
+  LeaveButtonListener->Id = "LeaveButtonListener";
+  
+
+  auto LeavePopUp = std::make_unique<PopUpComponent>();
+  UnitClass LeavePopUpContainerX;
+  LeavePopUpContainerX.Unit = UnitType::Percent;
+  LeavePopUpContainerX.Value = 0.5f;
+  UnitClass LeavePopUpContainerY;
+  LeavePopUpContainerY.Unit = UnitType::Percent;
+  LeavePopUpContainerY.Value = 0.5f;
+  UnitClass LeavePopUpContainerW;
+  LeavePopUpContainerW.Unit = UnitType::Percent;
+  LeavePopUpContainerW.Value = 0.3f;
+  UnitClass LeavePopUpContainerH;
+  LeavePopUpContainerH.Unit = UnitType::Percent;
+  LeavePopUpContainerH.Value = 0.3f;
+
+  
+
+  auto LeavePopUpContainer = std::make_unique<Component>("LeavePopUpContainer",LeavePopUpContainerW,LeavePopUpContainerH,LeavePopUpContainerX,LeavePopUpContainerY,
+  OriginClass::Center,OriginClass::Center);
+  LeavePopUpContainer->SetRGBA(1.0,1.0,0.0,1.0);
+
+  UnitClass LeavePopUpTextX;
+  LeavePopUpTextX.Unit = UnitType::Percent;
+  LeavePopUpTextX.Value = 0.5f;
+  UnitClass LeavePopUpTextY;
+  LeavePopUpTextY.Unit = UnitType::Percent;
+  LeavePopUpTextY.Value = -0.1f;
+  UnitClass LeavePopUpTextW;
+  LeavePopUpTextW.Unit = UnitType::Percent;
+  LeavePopUpTextW.Value = 0.0f;
+  UnitClass LeavePopUpTextH;
+  LeavePopUpTextH.Unit = UnitType::Percent;
+  LeavePopUpTextH.Value = 0.0f;
+
+  PopUpAdditionalConfigs LeavePopUpTextConfigs;
+  LeavePopUpTextConfigs.Font = "Cinzel";
+  LeavePopUpTextConfigs.Text = "Deseja Sair Do Jogo?";
+
+  
+
+  auto LeavePopUpText = std::make_unique<Component>("LeavePopUpText",LeavePopUpTextW,LeavePopUpTextH,LeavePopUpTextX,LeavePopUpTextY,
+  OriginClass::Center,OriginClass::Center);
+  LeavePopUpText->SetRGBA(0.0,0.0,0.0,1.0);
+  LeavePopUpText->SetTextAlingX(Align::Center);
+
+
+  LeavePopUp->SetPopUpContainer(std::move(LeavePopUpContainer),ComponentType::Rectangle);
+
+    LeavePopUpTextConfigs.Parent = SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpContainer")->second.get();
+  LeavePopUp->AddNewChildren(std::move(LeavePopUpText),ComponentType::Text,LeavePopUpTextConfigs);
+  
+  
+  SunCore::instance().SunWorld.AddPopUpToWorld("LeavePopUp",std::move(LeavePopUp));
+
+
+  LeaveButtonListener->Fn = [this](SunEvent& e){
+    if(SunCore::instance().SunWorld.GetPopUp("LeavePopUp")->GetDisplay() == DisplayType::None){
+  SunCore::instance().SunWorld.ShowPopUp("LeavePopUp");
+    }else{
+      SunCore::instance().SunWorld.DisablePopUp("LeavePopUp");
+    }
+  }; 
+  SunCore::instance().SunBrain.NewListener(std::move(LeaveButtonListener));  
+     
 
 
 

@@ -2,6 +2,8 @@
 #include FT_FREETYPE_H
 #include "SunText.h"
 #include <GL/glew.h>
+#include <codecvt>
+#include <locale>
 FT_Library ft;
 
 void SunText::Init(){
@@ -19,6 +21,7 @@ void LoadFont(SunFont* Sf,FT_Face& Face){
 
 int AtlasWidth = 0;
 int AtlasHeight = 0;
+
 for(unsigned char c = 0;c<128;c++){
 
     if (FT_Load_Char(Face, c, FT_LOAD_RENDER))
@@ -26,7 +29,7 @@ for(unsigned char c = 0;c<128;c++){
         std::cout << "Erro ao carregar glyph\n";
         continue;
     }
-    AtlasWidth += Sf->Face->glyph->bitmap.width;
+    AtlasWidth += Sf->Face->glyph->bitmap.width * 2;
     AtlasHeight = std::max(AtlasHeight, (int)Face->glyph->bitmap.rows);
 
 
@@ -59,8 +62,8 @@ for (unsigned char c = 0; c < 128; c++)
         continue;
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexSubImage2D(
         GL_TEXTURE_2D,
@@ -92,7 +95,7 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     Sf->AddToCaracters(c, ch);
 
-    currentX += Face->glyph->bitmap.width;
+    currentX += Face->glyph->bitmap.width * 2;
 }
 
 
@@ -102,7 +105,7 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 void SunText::AddFont(std::unique_ptr<SunFont> Font){
   LoadFont(Font.get(),Font->Face);
   
-  SunCore::instance().SunFontsControl.AddFontToWorld("Cinzel",std::move(Font));
+  SunCore::instance().SunFontsControl.AddFontToWorld(std::move(Font));
 
 
   

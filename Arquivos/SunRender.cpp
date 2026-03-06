@@ -3,7 +3,99 @@
 #include <GL/glew.h>
 #include "SunEngineCore.h"
 #include "SunRender.h"
+float Ease(float t, EaseTypes type)
+{
+    switch(type)
+    {
+        case EaseTypes::EaseIn:
+            return t * t;
 
+        case EaseTypes::EaseOut:
+            return 1 - pow(1 - t, 2);
+
+        case EaseTypes::EaseInOut:
+            if(t < 0.5)
+                return 2 * t * t;
+            else
+                return 1 - pow(-2 * t + 2, 2) / 2;
+
+        default:
+            return t;
+    }
+}
+
+
+float GetAnimationPropertie(Component* c,Animations a){
+switch(a.Propertie){
+  case AnimationProperties::X:
+  return c->GetX().ValueResolved;
+  break;
+   case AnimationProperties::Y:
+  return c->GetY().ValueResolved;
+  break;
+   case AnimationProperties::R:
+  return c->GetRGBA()->R;
+  break;
+  case AnimationProperties::B:
+  return c->GetRGBA()->B;
+  break;
+  case AnimationProperties::G:
+  return c->GetRGBA()->G;
+  break;
+  case AnimationProperties::Alpha:
+  return c->GetRGBA()->A;
+  break;
+  case AnimationProperties::Height:
+  return c->GetHeight().ValueResolved;
+  break;
+  case AnimationProperties::Width:
+  return c->GetWidth().ValueResolved;
+  break;
+}
+return 0.0;
+};
+
+
+void ApplyValue(float v, Component* c,Animations a){
+   switch(a.Propertie){
+    case AnimationProperties::X:{
+      UnitClass u;
+      u.Unit = UnitType::Pixel;
+      u.Value = v;
+       c->SetX(u);
+      break;
+    }
+   }
+};
+
+
+
+
+void RenderAnimation(Component* c,SunAnimation* a){
+
+ {
+    float elapsed = SunCore::instance().SunTime.GetTime() - a->GetStartTime();
+    float duration = a->GetDuration();
+
+    float t = std::min(elapsed / duration, 1.0f);
+
+    for(auto& ia : a->GetAnimations())
+    {
+        float start = ia.Get();
+        float end = ia.Target;
+
+        float eased = Ease(t, ia.EaseType);
+
+        float value = start + (end - start) * eased;
+
+        ApplyValue(value, c, ia);
+    }
+
+    if(t >= 1.0f)
+        SunCore::instance().SunAnimations.FinishAnimation(c->GetId());
+}
+
+}
 
 
 
@@ -66,13 +158,22 @@ void RenderDebug(){
 void EngineRender(float dt,float t){
     glClearColor(0, 0, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
+    for(auto& a : SunCore::instance().SunAnimations.GetActiveAnimations()){
+     auto* ani = a.second.get();
+     std::string s = a.first;
+     RenderAnimation(SunCore::instance().SunWorld.GetWorldComponentsMap().find(s)->second.get(),a.second.get());
+    }
+    
    for (auto& rc : SunCore::instance().SunEngineConfig->Render.RenderVector) {
+    auto& c = rc->OriginalComponent;
+    if(c->GetRenderDisplay() != DisplayType::None){
    rc->OriginalComponent->ResolveComponent();
    if(rc->Material){
    rc->Material->Apply(rc,t,dt);
    }else{
     rc->RenderMethod();   
    }
+}
    }
 
 

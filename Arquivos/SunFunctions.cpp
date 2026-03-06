@@ -289,11 +289,11 @@ void RenderMethod()override{
    GLuint Shader = SunCore::instance().Gl.TextShader;
     SunFont* Font = SunCore::instance().SunFontsControl.GetFont(this->Font);
     std::string Text = this->Text;
-    
-   float PosX = this->X;
-   float PosY = this->Y;
-   float WindowHeight = SunCore::instance().WindowHeight;
+       float WindowHeight = SunCore::instance().WindowHeight;
   float WindowWidth = SunCore::instance().WindowWidth;
+   float PosX = this->X;
+   float PosY = WindowHeight - this->Y;
+
 
              
 
@@ -301,7 +301,7 @@ void RenderMethod()override{
                 float SizeX = this->Width;
                 float SizeY =  this->Height;
     
-          if(TextAlignX != Align::None){
+          if(TextAlignX == Align::None){
                   switch(this->OriginX){
                 case OriginClass::Center:
                 PosX =  this->X - (SizeX / 2) ;
@@ -314,7 +314,7 @@ void RenderMethod()override{
                 break;
                }
               }
-              if(TextAlignY != Align::None){
+              if(TextAlignY == Align::None){
                switch(this->OriginY){
                 case OriginClass::Center:
                  PosY = WindowHeight - (this->Y + Height / 2) ;
@@ -557,6 +557,7 @@ break;
         Rc->TextAlignX = ComponentClass->GetTextAlignX();
          Rc->TextAlignX = ComponentClass->GetTextAlignY();
   ComponentClass->SetComponentType(ComponentType::Text);
+  ComponentClass->SetText(Text);
  ComponentClass->SetFont(SunCore::instance().SunFontsControl.GetFont(FontId));
     ComponentClass.get()->SetRenderComponent(Rc);
   SunCore::instance().SunEngineConfig->Render.RenderVector.push_back(Rc);

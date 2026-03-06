@@ -6,6 +6,8 @@
 #include <vector>
 #include <functional>
 #include <memory>
+#include <codecvt>
+#include <locale>
 #include "SunEngineCore.h"
 
 class SunText{
@@ -13,3 +15,4 @@ class SunText{
   void Init();
   void AddFont(std::unique_ptr<SunFont> Font);
 };
+

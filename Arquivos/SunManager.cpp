@@ -10,15 +10,49 @@
 SDL_Event event;
 
 void Dispatch(SDL_Event& event,SunListener* Listener){
+    if(event.type == Listener->GetKeyboardEventType()){
     SDL_Keycode Key = event.key.keysym.sym;
-            if(Listener->Trigger.Type == TriggerType::KeyDown){
           if(Key == Listener->GetSDLKey()){
           if(Listener->UseFn){
             SunEvent Event;
             Listener->Fn(Event);
           }
           }
-        }
+        
+    }
+    };
+
+    
+void MouseDispatch(SDL_Event& event,SunListener* Listener){
+     
+     
+    if(Listener->Trigger.GetMouseTriggerType() != MouseTriggersType::None && Listener->Trigger.GetMouseButtonCode() != MouseButtons::None){
+    if(event.type == Listener->GetMouseEventType() && event.button.button == Listener->GetMouseButton() && 
+    Listener->Trigger.GetComponentTarget()){
+        auto c = Listener->Trigger.GetComponentTarget();
+       float mouseX = event.button.x;
+    float mouseY = event.button.y;
+    float x = c->GetX().RenderValue;
+    float y = c->GetY().RenderValue;
+    float w = c->GetWidth().RenderValue;
+    float h = c->GetHeight().RenderValue;
+
+    if(mouseX > x && mouseX < x + w){
+       if(mouseY > y && mouseY < y + h){
+        
+        if(Listener->UseFn){
+            SunEvent Event;
+            Listener->Fn(Event);
+          }
+       } 
+    }
+
+    }
+    }
+  
+
+  
+      
       
     };
 
@@ -28,16 +62,11 @@ void SunDispatchs(){
         if(event.type == SDL_QUIT) {
       SunCore::instance().ApplicationState = "Off";
     }
-for(const auto& Listener : SunCore::instance().SunBrain.GetListeners()){
     
 
-    if(event.type == SDL_KEYDOWN){
+for(const auto& Listener : SunCore::instance().SunBrain.GetListeners()){
        Dispatch(event,Listener.second.get());   
-       SDL_Keycode Key = event.key.keysym.sym;
-          if(Key == SDLK_F11){           
-    WindowManipulate("LeaveFullScreen");
-        }
-    }
+   MouseDispatch(event,Listener.second.get());
   
     
 
@@ -53,7 +82,7 @@ void SunUpdateInput(){
 
     for(const auto& Listener : SunCore::instance().SunBrain.GetListeners()){
 
-        if(Listener.second->Trigger.Type == TriggerType::KeyHeld){
+        if(Listener.second->Trigger.GetKeyBoardTriggerType() == KeyboardTriggersType::KeyHeld){
 
             if(state[Listener.second->GetSDLScanKey()]){
 
