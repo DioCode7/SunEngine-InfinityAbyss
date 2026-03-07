@@ -13,3 +13,4 @@ void WindowManipulate(const std::string ManipulateType);
 
 void RunScene(Scene* RequestScene);
 void ScenesLoop();
+void SunQuit();

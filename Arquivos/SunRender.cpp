@@ -71,18 +71,18 @@ void ApplyValue(float v, Component* c,Animations a){
 
 
 
-void RenderAnimation(Component* c,SunAnimation* a){
+void RenderAnimation(Component* c,SunAnimation& a){
 
  {
-    float elapsed = SunCore::instance().SunTime.GetTime() - a->GetStartTime();
-    float duration = a->GetDuration();
+    float elapsed = SunCore::instance().SunTime.GetTime() - a.GetStartTime();
+    float duration = a.GetDuration();
 
     float t = std::min(elapsed / duration, 1.0f);
 
-    for(auto& ia : a->GetAnimations())
+    for(auto& ia : a.GetAnimations())
     {
         float start = ia.Get();
-        float end = ia.Target;
+        float end = ia.Target.ValueResolved;
 
         float eased = Ease(t, ia.EaseType);
 
@@ -159,15 +159,15 @@ void EngineRender(float dt,float t){
     glClearColor(0, 0, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     for(auto& a : SunCore::instance().SunAnimations.GetActiveAnimations()){
-     auto* ani = a.second.get();
+     auto& ani = a.second;
      std::string s = a.first;
-     RenderAnimation(SunCore::instance().SunWorld.GetWorldComponentsMap().find(s)->second.get(),a.second.get());
+     RenderAnimation(SunCore::instance().SunWorld.GetWorldComponentsMap().find(s)->second.get(),a.second);
     }
     
    for (auto& rc : SunCore::instance().SunEngineConfig->Render.RenderVector) {
     auto& c = rc->OriginalComponent;
+    rc->OriginalComponent->ResolveComponent();
     if(c->GetRenderDisplay() != DisplayType::None){
-   rc->OriginalComponent->ResolveComponent();
    if(rc->Material){
    rc->Material->Apply(rc,t,dt);
    }else{

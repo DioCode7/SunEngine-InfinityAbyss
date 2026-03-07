@@ -7,6 +7,7 @@
 #include "SunEngineCore.h"
 #include "SunRender.h"
 #include "SunFunctions.h"
+#include "SunAnimations.h"
 
 void Scene::SceneConfigs() {}
 void Scene::OnLoad() {}
@@ -899,6 +900,10 @@ float Ortho[16] = {
     ti++;
     break;
    }
+   case SunUniformsTypes::uSunStartTime:{
+     
+    break;
+   };
    };
   };
 
@@ -981,6 +986,7 @@ void SunShadersCore::AddShaderToWorld(std::string Id,std::unique_ptr<SunShader> 
     auto uSunTime = glGetUniformLocation(s->GetShaderProgram(),"uSunTime");
      auto uSunTexture = glGetUniformLocation(s->GetShaderProgram(),"uSunTexture");
           auto uSunTextureMask = glGetUniformLocation(s->GetShaderProgram(),"uSunTextureMask");
+          auto uSunStartTime = glGetUniformLocation(s->GetShaderProgram(),"uSunStartTime");
     if(uSunPos != -1){
     s->AddSunUniform(SunUniformsTypes::uSunPos,uSunPos);
     };
@@ -999,6 +1005,10 @@ s->AddSunUniform(SunUniformsTypes::uSunTexture,uSunTexture);
 
      if(uSunTextureMask != -1){
 s->AddSunUniform(SunUniformsTypes::uSunTextureMask,uSunTextureMask);
+    }
+
+    if(uSunStartTime != -1){
+      s->AddSunUniform(SunUniformsTypes::uSunStartTime,uSunStartTime);
     }
 
      CreateComponentVAO(s.get());
@@ -1125,14 +1135,54 @@ switch(ct){
 
 
 void PopUpComponent::ShowPopUp(){
+   for(auto& c : PopUpContainer->GetOwner()->Childrens){
+       c->ComponentClass->SetDisplay(DisplayType::None);
+      c->ComponentClass->SetRenderDisplay(DisplayType::None);
+    }
     PopUpContainer->SetDisplay(DisplayType::Absolute);
+    if(EntryAnimationBool){
+      SunAnimationsRender Sar;
+       Sar.PlayAnimation(PopUpContainer->GetId(),EntryAnimation);
+    }
+   
+
+    ChildsStartTime = SunCore::instance().SunTime.GetTime();
+    ChildsAwait = true;
+    
 };
 
+void PopUpComponent::Update(){
+if(!ChildsAwait) return;
+
+if(ChildsStartTime + EntryChildsDelay < SunCore::instance().SunTime.GetTime()){
+
+for(auto& c : PopUpContainer->GetOwner()->Childrens){
+      c->ComponentClass->SetDisplay(DisplayType::Absolute);
+    }
+};
+}
 
 void PopUpComponent::DisablePopUp(){
+    if(LeaveAnimationBool){
+      SunAnimationsRender Sar;
+      Component* PopUpContainerptr = PopUpContainer;
+      LeaveAnimation.OnFinish = [PopUpContainerptr](SunEvent& e){
+        PopUpContainerptr->SetDisplay(DisplayType::None);
+      };
+       Sar.PlayAnimation(PopUpContainer->GetId(),LeaveAnimation);
+    }
+    else{
     PopUpContainer->SetDisplay(DisplayType::None);
-};
+    }
+  };
 
 DisplayType PopUpComponent::GetDisplay(){
 return PopUpContainer->GetRenderDisplay();
 };
+
+
+void SpecialComponentsUpdate(){
+  for(auto& popup : SunCore::instance().SunWorld.GetAllPopUps()){
+  popup.second->Update();
+  }
+}

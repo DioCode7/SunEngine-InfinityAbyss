@@ -427,10 +427,14 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   NodeClass* ParentNode = nullptr;
   if(Parent){
     ParentNode = Parent->GetOwner();
+     ComponentClass->SetzIndex(ComponentClass->GetzIndex() + Parent->GetzIndex());
   }
   ComponentNode->Parent = ParentNode;
   ComponentNode->ComponentClass = ComponentClass.get();
     ComponentClass.get()->SetOwner(std::move(ComponentNode));
+     if(ParentNode){
+    ParentNode->AddChild(ComponentClass->GetOwner());
+  }
   ComponentClass.get()->ResolveComponent();
   RenderComponentRectangle* Rc = new RenderComponentRectangle(ComponentClass.get()->GetX().ValueResolved,
     ComponentClass.get()->GetY().ValueResolved,ComponentClass.get()->GetWidth().ValueResolved,ComponentClass.get()->GetHeight().ValueResolved,ComponentClass.get()->GetRGBA()->R,
@@ -453,8 +457,12 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   NodeClass* ParentNode = nullptr;
   if(Parent){
     ParentNode = Parent->GetOwner();
+     ComponentClass->SetzIndex(ComponentClass->GetzIndex() + Parent->GetzIndex());
   }
   ComponentNode->Parent = ParentNode;
+  if(ParentNode){
+    ParentNode->AddChild(ComponentNode.get());
+  }
   ComponentNode->ComponentClass = ComponentClass.get();
    ComponentClass->SetOwner(std::move(ComponentNode));
    ComponentClass->ResolveComponent();
@@ -476,8 +484,12 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   NodeClass* ParentNode = nullptr;
   if(Parent){
     ParentNode = Parent->GetOwner();
+     ComponentClass->SetzIndex(ComponentClass->GetzIndex() + Parent->GetzIndex());
   }
   ComponentNode->Parent = ParentNode;
+ if(ParentNode){
+    ParentNode->AddChild(ComponentNode.get());
+  }
   ComponentNode->ComponentClass = ComponentClass.get();
     ComponentClass.get()->SetOwner(std::move(ComponentNode));
   ComponentClass.get()->ResolveComponent();
@@ -541,10 +553,15 @@ break;
   NodeClass* ParentNode = nullptr;
   if(Parent){
     ParentNode = Parent->GetOwner();
+    ComponentClass->SetzIndex(ComponentClass->GetzIndex() + Parent->GetzIndex());
   }
   ComponentNode->Parent = ParentNode;
+  
   ComponentNode->ComponentClass = ComponentClass.get();
     ComponentClass.get()->SetOwner(std::move(ComponentNode));
+     if(ParentNode){
+    ParentNode->AddChild(ComponentClass->GetOwner());
+  }
   ComponentClass.get()->ResolveComponent();
   RenderComponentText* Rc = new RenderComponentText(ComponentClass.get()->GetId(),ComponentClass.get()->GetX().ValueResolved,
     ComponentClass.get()->GetY().ValueResolved,ComponentClass.get()->GetWidth().ValueResolved,ComponentClass.get()->GetHeight().ValueResolved,OwnerScene,FontId,Text,
@@ -566,3 +583,6 @@ break;
 
  }
      
+ void SunQuit(){
+SunCore::instance().ApplicationState = "Off";
+ };

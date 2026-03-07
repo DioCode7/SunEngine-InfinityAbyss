@@ -110,7 +110,7 @@ SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassFrontMask","./Assets/Art
       SunTextures.NewTexture("InfinityAbyssMenuArtTextureGrassBack3Mask","./Assets/Arts/MenuArt/InfinityAbyss - MenuBackground1 - GrassBack3Mask.png");
         
     
-    
+    SunTextures.NewTexture("PopUpShadowsContainer","./Assets/Hud/InfinityAbyss - PopUpContainerShadows.png");
     
     
     
@@ -150,6 +150,15 @@ auto CinzelSmallFont = std::make_unique<SunFont>();
     
      
        SunTextControl.AddFont(std::move(CinzelSmallFont));
+
+       auto CinzelMidFont = std::make_unique<SunFont>();
+         CinzelMidFont->Id = "CinzelMid";
+         CinzelMidFont->FontPath = "./Assets/Fonts/CinzelDecorative-Regular.ttf";
+         CinzelMidFont->Height = 16;
+    
+     
+       SunTextControl.AddFont(std::move(CinzelMidFont));
+         
          
         auto CinzelFont = std::make_unique<SunFont>();
          CinzelFont->Id = "Cinzel";
@@ -1598,29 +1607,30 @@ MenuTree->AddMaterial("MenuTreeMaterial");
   auto LeavePopUp = std::make_unique<PopUpComponent>();
   UnitClass LeavePopUpContainerX;
   LeavePopUpContainerX.Unit = UnitType::Percent;
-  LeavePopUpContainerX.Value = 0.5f;
+  LeavePopUpContainerX.Value = -0.3f;
   UnitClass LeavePopUpContainerY;
   LeavePopUpContainerY.Unit = UnitType::Percent;
   LeavePopUpContainerY.Value = 0.5f;
   UnitClass LeavePopUpContainerW;
   LeavePopUpContainerW.Unit = UnitType::Percent;
-  LeavePopUpContainerW.Value = 0.3f;
+  LeavePopUpContainerW.Value = 0.6f;
   UnitClass LeavePopUpContainerH;
   LeavePopUpContainerH.Unit = UnitType::Percent;
-  LeavePopUpContainerH.Value = 0.3f;
+  LeavePopUpContainerH.Value = 0.4f;
 
   
 
   auto LeavePopUpContainer = std::make_unique<Component>("LeavePopUpContainer",LeavePopUpContainerW,LeavePopUpContainerH,LeavePopUpContainerX,LeavePopUpContainerY,
   OriginClass::Center,OriginClass::Center);
-  LeavePopUpContainer->SetRGBA(1.0,1.0,0.0,1.0);
+  LeavePopUpContainer->SetRGBA(0.3,0.3,0.3,1.0);
+
 
   UnitClass LeavePopUpTextX;
   LeavePopUpTextX.Unit = UnitType::Percent;
   LeavePopUpTextX.Value = 0.5f;
   UnitClass LeavePopUpTextY;
   LeavePopUpTextY.Unit = UnitType::Percent;
-  LeavePopUpTextY.Value = -0.1f;
+  LeavePopUpTextY.Value = 0.3f;
   UnitClass LeavePopUpTextW;
   LeavePopUpTextW.Unit = UnitType::Percent;
   LeavePopUpTextW.Value = 0.0f;
@@ -1636,28 +1646,403 @@ MenuTree->AddMaterial("MenuTreeMaterial");
 
   auto LeavePopUpText = std::make_unique<Component>("LeavePopUpText",LeavePopUpTextW,LeavePopUpTextH,LeavePopUpTextX,LeavePopUpTextY,
   OriginClass::Center,OriginClass::Center);
-  LeavePopUpText->SetRGBA(0.0,0.0,0.0,1.0);
+  LeavePopUpText->SetRGBA(1.0,1.0,1.0,1.0);
   LeavePopUpText->SetTextAlingX(Align::Center);
 
 
-  LeavePopUp->SetPopUpContainer(std::move(LeavePopUpContainer),ComponentType::Rectangle);
+  
+  UnitClass LeavePopUpButtonNoX;
+  LeavePopUpButtonNoX.Unit = UnitType::Percent;
+  LeavePopUpButtonNoX.Value = 0.65f;
+  UnitClass LeavePopUpButtonNoY;
+  LeavePopUpButtonNoY.Unit = UnitType::Percent;
+  LeavePopUpButtonNoY.Value = 0.6f;
+  UnitClass LeavePopUpButtonNoW;
+  LeavePopUpButtonNoW.Unit = UnitType::Percent;
+  LeavePopUpButtonNoW.Value = 0.1f;
+  UnitClass LeavePopUpButtonNoH;
+  LeavePopUpButtonNoH.Unit = UnitType::Percent;
+  LeavePopUpButtonNoH.Value = 0.09f;
+
+  PopUpAdditionalConfigs LeavePopUpNoButtonConfigs;
+
+
+  
+
+  auto LeavePopUpButtonNo = std::make_unique<Component>("LeavePopUpButtonNo",LeavePopUpButtonNoW,LeavePopUpButtonNoH,LeavePopUpButtonNoX,LeavePopUpButtonNoY,
+  OriginClass::End,OriginClass::Center);
+  LeavePopUpButtonNo->SetRGBA(0.0,0.0,0.0,1.0);
+
+
+  UnitClass LeavePopUpTextNoX;
+  LeavePopUpTextNoX.Unit = UnitType::Percent;
+  LeavePopUpTextNoX.Value = 0.5f;
+  UnitClass LeavePopUpTextNoY;
+  LeavePopUpTextNoY.Unit = UnitType::Percent;
+  LeavePopUpTextNoY.Value = 0.3f;
+  UnitClass LeavePopUpTextNoW;
+  LeavePopUpTextNoW.Unit = UnitType::Percent;
+  LeavePopUpTextNoW.Value = 0.0f;
+  UnitClass LeavePopUpTextNoH;
+  LeavePopUpTextNoH.Unit = UnitType::Percent;
+  LeavePopUpTextNoH.Value = 0.0f;
+
+  PopUpAdditionalConfigs LeavePopUpTextNoConfigs;
+  LeavePopUpTextNoConfigs.Font = "CinzelMid";
+  LeavePopUpTextNoConfigs.Text = "NAO";
+
+  
+
+  auto LeavePopUpTextNo = std::make_unique<Component>("LeavePopUpTextNo",LeavePopUpTextNoW,LeavePopUpTextNoH,LeavePopUpTextNoX,LeavePopUpTextNoY,
+  OriginClass::Center,OriginClass::Center);
+  LeavePopUpTextNo->SetRGBA(1.0,1.0,1.0,1.0);
+  LeavePopUpTextNo->SetTextAlingX(Align::Center);
+  LeavePopUpTextNo->SetTextAlingY(Align::Center);
+    LeavePopUpTextNo->SetCharatersMargin(0.1,0.0);
+
+  
+
+  
+  UnitClass LeavePopUpButtonYesX;
+  LeavePopUpButtonYesX.Unit = UnitType::Percent;
+  LeavePopUpButtonYesX.Value = 0.35f;
+  UnitClass LeavePopUpButtonYesY;
+  LeavePopUpButtonYesY.Unit = UnitType::Percent;
+  LeavePopUpButtonYesY.Value = 0.6f;
+  UnitClass LeavePopUpButtonYesW;
+  LeavePopUpButtonYesW.Unit = UnitType::Percent;
+  LeavePopUpButtonYesW.Value = 0.1f;
+  UnitClass LeavePopUpButtonYesH;
+  LeavePopUpButtonYesH.Unit = UnitType::Percent;
+  LeavePopUpButtonYesH.Value = 0.09f;
+
+  PopUpAdditionalConfigs LeavePopUpYesButtonConfigs;
+
+
+  
+
+  auto LeavePopUpButtonYes = std::make_unique<Component>("LeavePopUpButtonYes",LeavePopUpButtonYesW,LeavePopUpButtonYesH,LeavePopUpButtonYesX,LeavePopUpButtonYesY,
+  OriginClass::Start,OriginClass::Center);
+  LeavePopUpButtonYes->SetRGBA(0.0,0.0,0.0,1.0);
+
+
+  UnitClass LeavePopUpTextYesX;
+  LeavePopUpTextYesX.Unit = UnitType::Percent;
+  LeavePopUpTextYesX.Value = 0.5f;
+  UnitClass LeavePopUpTextYesY;
+  LeavePopUpTextYesY.Unit = UnitType::Percent;
+  LeavePopUpTextYesY.Value = 0.3f;
+  UnitClass LeavePopUpTextYesW;
+  LeavePopUpTextYesW.Unit = UnitType::Percent;
+  LeavePopUpTextYesW.Value = 0.0f;
+  UnitClass LeavePopUpTextYesH;
+  LeavePopUpTextYesH.Unit = UnitType::Percent;
+  LeavePopUpTextYesH.Value = 0.0f;
+
+  PopUpAdditionalConfigs LeavePopUpTextYesConfigs;
+  LeavePopUpTextYesConfigs.Font = "CinzelMid";
+  LeavePopUpTextYesConfigs.Text = "SIM";
+
+  
+
+  auto LeavePopUpTextYes = std::make_unique<Component>("LeavePopUpTextYes",LeavePopUpTextYesW,LeavePopUpTextYesH,LeavePopUpTextYesX,LeavePopUpTextYesY,
+  OriginClass::Center,OriginClass::Center);
+  LeavePopUpTextYes->SetRGBA(1.0,1.0,1.0,1.0);
+  LeavePopUpTextYes->SetTextAlingX(Align::Center);
+  LeavePopUpTextYes->SetTextAlingY(Align::Center);
+  LeavePopUpTextYes->SetCharatersMargin(0.1,0.0);
+
+
+
+
+
+
+
+
+
+     LeavePopUpContainer->SetTexture("PopUpShadowsContainer");
+
+     
+        const char* PopUpShadowsContainerVertexShader = R"(
+        #version 330 core
+
+                layout (location = 0) in vec3 aPos;
+                layout (location = 1) in vec2 aUV;
+
+                out vec2 vUV;
+
+                uniform vec2 uSunPos;     
+                uniform vec2 uSunSize;
+                uniform mat4 uSunProjection;
+                    
+                    
+                void main(){
+              
+              gl_Position = uSunProjection * vec4(aPos.xy, 0.0, 1.0);
+              vUV = aUV;
+               
+                }
+        
+        )";
+
+
+     const char* PopUpShadowsContainerFragmentShader = R"(
+      #version 330 core
+
+      in vec2 vUV;
+      
+
+
+   
+      uniform sampler2D uSunTexture;
+      uniform sampler2D uSunTextureMask;
+      uniform float uSunTime;
+      uniform float Start;
+      out vec4 FragColor;
+
+
+
+      float hash(vec2 p){
+          return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453);
+      };
+
+      float noise(vec2 p){
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+
+        float a = hash(i);
+        float b = hash(i + vec2(1.0,0.0));
+        float c = hash(i + vec2(0.0,1.0));
+        float d = hash(i + vec2(1.0,1.0));
+
+        vec2 u = f * f * (3.0 - 2.0 * f);
+
+        return mix(a,b,u.x) +
+        (c - a) * u.y * (1.0 -u.x) +
+        (d- b) * u.x * u.y;
+      };
+
+      float fbm(vec2 p)
+{
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+
+    for(int i = 0; i < 5; i++)
+    {
+        value += amplitude * noise(p * frequency);
+        frequency *= 2.0;
+        amplitude *= 0.5;
+    }
+
+    return value;
+}
+
+      void main(){
+        vec2 uv = vUV;
+        float dt = uSunTime - Start;
+        float startedge = 1.5;
+         float d = distance(uv, vec2(0.5));
+     float t = smoothstep(0.0,startedge,dt);
+
+      float fade = smoothstep(0.01, 0.99, d);
+
+     float dirx = smoothstep(0.0, 0.5, uv.x) - smoothstep(0.5, 1.0, uv.x);
+      float diry = smoothstep(0.0, 0.5, uv.y) - smoothstep(0.5, 1.0, uv.y);
+      uv.y -= smoothstep(startedge,fbm(vec2(uv.x * 20.0 + uSunTime * 0.6,uSunTime * 3.0)),dt);
+    float line = 1.0 - smoothstep(0.04, 0.02, abs(uv.y - 0.5));
+
+float progress = clamp(dt / startedge, 0.0, 1.0);
+
+
+
+float sweep = smoothstep(progress - 0.1, progress, uv.x);
+
+float StartNoise = (line * sweep);
+      float Noise = fbm((uv * dirx) * 10.0 + uSunTime * 0.5);
+
+     
+
+          vec4 tex = texture(uSunTexture,uv);
+         float FinalNoise = mix(StartNoise,Noise,t);
+         tex.a -= FinalNoise * fade * 0.5;
+         uv -= FinalNoise * fade * 0.5;
+      
+         if(tex.a < 0.95){
+         discard;
+         };
+         tex.a = 1.0;
+         tex.r = 0.0;
+         tex.b = 0.0;
+         tex.g = 0.0;
+
+         if(uv.x < 0.05 || uv.x > 0.95){
+         discard;
+         }
+          if(uv.y < 0.05 || uv.y > 0.95){
+         discard;
+         }
+       
+        
+        
+          FragColor = tex;
+      }
+          
+          )";
+
+     std::unique_ptr<SunShader>PopUpShadowsContainerShader = std::make_unique<SunShader>();
+     
+    GLuint PopUpShadowsContainerShaderProgram = CreateFullShaderProgram(PopUpShadowsContainerVertexShader,PopUpShadowsContainerFragmentShader);
+   PopUpShadowsContainerShader->SetShaderProgram(PopUpShadowsContainerShaderProgram);
+
+   auto StartUniform = std::make_unique<ShaderUniform>();
+   StartUniform->Type = UniformType::OneFloat;
+
+   PopUpShadowsContainerShader->AddUniform("Start",std::move(StartUniform));
+    SunCore::instance().SunShaders.AddShaderToWorld("PopUpShadowsContainerShader",std::move(PopUpShadowsContainerShader));
+
+    SunCore::instance().SunWorld.AddMaterialToWorld("PopUpShadowsContainerMaterial","PopUpShadowsContainerShader");
+     Material* PopUpShadowsContainerMaterial = SunCore::instance().SunWorld.GetMaterial("PopUpShadowsContainerMaterial");
+   PopUpShadowsContainerMaterial->AddFloatUniform("Start",0);
+
+LeavePopUpContainer->SetzIndex(100);
+
+
+
+  LeavePopUp->SetPopUpContainer(std::move(LeavePopUpContainer),ComponentType::Sprite);
+  SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpContainer")->second->AddMaterial("PopUpShadowsContainerMaterial");
 
     LeavePopUpTextConfigs.Parent = SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpContainer")->second.get();
+      LeavePopUpNoButtonConfigs.Parent = SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpContainer")->second.get();
+            LeavePopUpYesButtonConfigs.Parent = SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpContainer")->second.get();
+     
   LeavePopUp->AddNewChildren(std::move(LeavePopUpText),ComponentType::Text,LeavePopUpTextConfigs);
-  
-  
+  LeavePopUp->AddNewChildren(std::move(LeavePopUpButtonNo),ComponentType::Rectangle,LeavePopUpNoButtonConfigs);
+    LeavePopUp->AddNewChildren(std::move(LeavePopUpButtonYes),ComponentType::Rectangle,LeavePopUpYesButtonConfigs);
+
+   LeavePopUpTextNoConfigs.Parent = SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpButtonNo")->second.get();
+    LeavePopUp->AddNewChildren(std::move(LeavePopUpTextNo),ComponentType::Text,LeavePopUpTextNoConfigs);
+
+       LeavePopUpTextYesConfigs.Parent = SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpButtonYes")->second.get();
+    LeavePopUp->AddNewChildren(std::move(LeavePopUpTextYes),ComponentType::Text,LeavePopUpTextYesConfigs);
+
+   SunAnimation LeavePopUpEntryAnimation;
+   Animations LeavePopUpEntryAnimationX;
+   LeavePopUpEntryAnimationX.EaseType = EaseTypes::EaseOut;
+   LeavePopUpEntryAnimationX.Propertie = AnimationProperties::X;
+   UnitClass LeavePopUpEntryAnimationXUnitClass;
+   LeavePopUpEntryAnimationXUnitClass.Unit = UnitType::Percent;
+   LeavePopUpEntryAnimationXUnitClass.Value = 0.5f;
+
+   UnitClass LeavePopUpEntryAnimationXUnitClassInit;
+   LeavePopUpEntryAnimationXUnitClassInit.Unit = UnitType::Percent;
+   LeavePopUpEntryAnimationXUnitClassInit.Value = -0.3f;
+   LeavePopUpEntryAnimationX.Target = LeavePopUpEntryAnimationXUnitClass;
+   LeavePopUpEntryAnimationX.SetFixedStartValue(LeavePopUpEntryAnimationXUnitClassInit);
+   LeavePopUpEntryAnimation.SetDuration(0.5);
+   LeavePopUpEntryAnimation.AddInnerAnimation(LeavePopUpEntryAnimationX);
+
+     LeavePopUp->SetEntryAnimation(LeavePopUpEntryAnimation);
+
+     
+   SunAnimation LeavePopUpLeaveAnimation;
+   Animations LeavePopUpLeaveAnimationX;
+   LeavePopUpLeaveAnimationX.EaseType = EaseTypes::EaseIn;
+   LeavePopUpLeaveAnimationX.Propertie = AnimationProperties::X;
+   UnitClass LeavePopUpLeaveAnimationXUnitClass;
+   LeavePopUpLeaveAnimationXUnitClass.Unit = UnitType::Percent;
+   LeavePopUpLeaveAnimationXUnitClass.Value = -0.3f;
+
+   UnitClass LeavePopUpLeaveAnimationXUnitClassInit;
+   LeavePopUpLeaveAnimationXUnitClassInit.Unit = UnitType::Percent;
+   LeavePopUpLeaveAnimationXUnitClassInit.Value = 0.5f;
+   LeavePopUpLeaveAnimationX.Target = LeavePopUpLeaveAnimationXUnitClass;
+   LeavePopUpLeaveAnimationX.SetFixedStartValue(LeavePopUpLeaveAnimationXUnitClassInit);
+   LeavePopUpLeaveAnimation.SetDuration(0.5);
+   LeavePopUpLeaveAnimation.AddInnerAnimation(LeavePopUpLeaveAnimationX);
+
+     LeavePopUp->SetLeaveAnimation(LeavePopUpLeaveAnimation);
+  LeavePopUp->SetEntryChildsDelay(1.5);
   SunCore::instance().SunWorld.AddPopUpToWorld("LeavePopUp",std::move(LeavePopUp));
 
 
-  LeaveButtonListener->Fn = [this](SunEvent& e){
+  LeaveButtonListener->Fn = [this,PopUpShadowsContainerMaterial](SunEvent& e){
+    if(SunCore::instance().SunWorld.GetPopUp("LeavePopUp")->GetDisplay() == DisplayType::None){
+  SunCore::instance().SunWorld.ShowPopUp("LeavePopUp");
+    PopUpShadowsContainerMaterial->GetFloatsUniforms().find("Start")->second = SunCore::instance().SunTime.GetTime();
+    }else{
+      SunCore::instance().SunWorld.DisablePopUp("LeavePopUp");
+    }
+  }; 
+  SunCore::instance().SunBrain.NewListener(std::move(LeaveButtonListener));  
+
+
+
+    auto LeavePopUpNoListener = std::make_unique<SunListener>();
+  SunEventTrigger LeavePopUpNoListenerTrigger;
+  LeavePopUpNoListenerTrigger.SetMouseTrigger(MouseTriggersType::PointerDown,MouseButtons::LMB,
+  SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpButtonNo")->second.get());
+  LeavePopUpNoListenerTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyDown,KeyCodes::A);
+  LeavePopUpNoListener->UseFn = true;
+  LeavePopUpNoListener->Trigger = LeavePopUpNoListenerTrigger;
+  LeavePopUpNoListener->Id = "LeavePopUpNoListener";
+
+  
+  LeavePopUpNoListener->Fn = [this,PopUpShadowsContainerMaterial](SunEvent& e){
     if(SunCore::instance().SunWorld.GetPopUp("LeavePopUp")->GetDisplay() == DisplayType::None){
   SunCore::instance().SunWorld.ShowPopUp("LeavePopUp");
     }else{
       SunCore::instance().SunWorld.DisablePopUp("LeavePopUp");
     }
   }; 
-  SunCore::instance().SunBrain.NewListener(std::move(LeaveButtonListener));  
-     
+
+
+  
+  SunCore::instance().SunBrain.NewListener(std::move(LeavePopUpNoListener));
+
+
+
+    auto LeavePopUpYesListener = std::make_unique<SunListener>();
+  SunEventTrigger LeavePopUpYesListenerTrigger;
+  LeavePopUpYesListenerTrigger.SetMouseTrigger(MouseTriggersType::PointerDown,MouseButtons::LMB,
+  SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpButtonYes")->second.get());
+  LeavePopUpYesListenerTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyDown,KeyCodes::A);
+  LeavePopUpYesListener->UseFn = true;
+  LeavePopUpYesListener->Trigger = LeavePopUpYesListenerTrigger;
+  LeavePopUpYesListener->Id = "LeavePopUpYesListener";
+
+  
+  LeavePopUpYesListener->Fn = [this](SunEvent& e){
+    SunQuit();
+  }; 
+
+
+  
+  SunCore::instance().SunBrain.NewListener(std::move(LeavePopUpYesListener));
+
+
+
+
+    auto LeavePopUpYesHoverListener = std::make_unique<SunListener>();
+  SunEventTrigger LeavePopUpYesHoverListenerTrigger;
+  LeavePopUpYesHoverListenerTrigger.SetMouseTrigger(MouseTriggersType::MouseIn,MouseButtons::LMB,
+  SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpButtonYes")->second.get());
+  LeavePopUpYesHoverListenerTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyDown,KeyCodes::A);
+  LeavePopUpYesHoverListener->UseFn = true;
+  LeavePopUpYesHoverListener->Trigger = LeavePopUpYesHoverListenerTrigger;
+  LeavePopUpYesHoverListener->Id = "LeavePopUpYesHoverListener";
+
+  
+  LeavePopUpYesHoverListener->Fn = [this](SunEvent& e){
+    SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpTextYes")->second->SetRGBA(0.0,0.0,0.0,1.0);
+
+  }; 
+
+
+  
+  SunCore::instance().SunBrain.NewListener(std::move(LeavePopUpYesHoverListener));
+
+
 
 
 

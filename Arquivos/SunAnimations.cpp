@@ -115,21 +115,96 @@ void RenderAnimation(Component* c,SunAnimation a){
 
 */
 
-void SunAnimationsRender::PlayAnimation(std::string ComponentId,std::unique_ptr<SunAnimation> Animation){
+void SunAnimationsRender::ResolveTarget(Animations& a,Component* c){
+ switch(a.Propertie){
+  case AnimationProperties::X:{
+    switch(a.Target.Unit){
+      case UnitType::Pixel:{
+        float px = 0.0f;
+        if(c->GetOwner()){
+           if(c->GetOwner()->Parent){
+            Component* p = c->GetOwner()->Parent->ComponentClass;
+            px = p->GetX().RenderValue;
+           }
+      }
+       a.Target.ValueResolved = a.Target.Value + px;
+       break;
+    }
+      case UnitType::Percent:{
+        float pw = SunCore::instance().WindowWidth;
+        float px = 0.0f;
+        if(c->GetOwner()){
+           if(c->GetOwner()->Parent){
+            Component* p = c->GetOwner()->Parent->ComponentClass;
+            pw = p->GetWidth().ValueResolved;
+            px = p->GetX().RenderValue;
+           }
+           a.Target.ValueResolved = px + (pw * a.Target.Value);
+        }  
+        break;
+      }
+    }
+    break;
+  }
+ }
+};
+
+
+void SunAnimationsRender::ResolveInitTarget(Animations& a,Component* c){
+ switch(a.Propertie){
+  case AnimationProperties::X:{
+    switch(a.Target.Unit){
+      case UnitType::Pixel:{
+        float px = 0.0f;
+        if(c->GetOwner()){
+           if(c->GetOwner()->Parent){
+            Component* p = c->GetOwner()->Parent->ComponentClass;
+            px = p->GetX().RenderValue;
+           }
+      }
+       a.GetFixedInitValue().ValueResolved = a.GetFixedInitValue().Value + px;
+       break;
+    }
+      case UnitType::Percent:{
+        float pw = SunCore::instance().WindowWidth;
+        float px = 0.0f;
+        if(c->GetOwner()){
+           if(c->GetOwner()->Parent){
+            Component* p = c->GetOwner()->Parent->ComponentClass;
+            pw = p->GetWidth().ValueResolved;
+            px = p->GetX().RenderValue;
+           }
+           a.GetFixedInitValue().ValueResolved = px + (pw * a.GetFixedInitValue().Value);
+        }  
+        break;
+      }
+    }
+    break;
+  }
+ }
+};
+
+void SunAnimationsRender::PlayAnimation(std::string ComponentId,SunAnimation Animation){
     auto ct = SunCore::instance().SunWorld.GetWorldComponentsMap().find(ComponentId);
     if(ct == SunCore::instance().SunWorld.GetWorldComponentsMap().end()){
     return;
     }
-    for(Animations& a :Animation->GetAnimations()){
+    for(Animations& a :Animation.GetAnimations()){
     float prop = GetAnimationProperties(ct->second.get(),a);
+    if(a.GetFixedInit()){
+      ResolveInitTarget(a,ct->second.get());
+     a.Init(a.GetFixedInitValue().ValueResolved);
+    }else{
     a.Init(prop);
-
     }
-   Animation->SetStartTime();
+    ResolveTarget(a,ct->second.get());
+    }
+
+   Animation.SetStartTime();
    
     
 
-    SunCore::instance().SunAnimations.AddActiveAnimation(ComponentId,std::move(Animation));
+    SunCore::instance().SunAnimations.AddActiveAnimation(ComponentId,Animation);
 };
 
 

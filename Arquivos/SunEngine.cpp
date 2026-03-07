@@ -30,6 +30,7 @@ void SunEngineGameLoop(){
     SunDispatchs();
     SunUpdateInput();
     ScenesLoop();
+    SpecialComponentsUpdate();
     EngineRender(DeltaTime,t);
    Core.SunWorld.CollisionsWorld.CollisionsUpdate(DeltaTime);
    Core.SunWorld.CollisionsWorld.PhysicUpdate(DeltaTime);

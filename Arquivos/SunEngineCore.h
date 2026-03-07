@@ -14,6 +14,7 @@
 
 #include <chrono>
 
+void SpecialComponentsUpdate();
 
 class SunCore;
 class Component;
@@ -119,6 +120,7 @@ uSunProjection,
 uSunTexture,
 uSunTime,
 uSunTextureMask,
+uSunStartTime,
 };
 
 
@@ -535,9 +537,21 @@ EaseInOut,
 class Animations{
   private:
   float StartValue = 0.0;
+  UnitClass InitValue;
+  bool FixedInit = false;
   public:
+  bool GetFixedInit()const{
+  return FixedInit;
+  };
+  UnitClass& GetFixedInitValue(){
+  return InitValue;
+  };
 AnimationProperties Propertie = AnimationProperties::None;
-float Target = 0.0;
+UnitClass Target;
+void SetFixedStartValue(UnitClass sv){
+ InitValue = sv;
+ FixedInit = true;
+}
 EaseTypes EaseType = EaseTypes::None;
 void Init(float f){
  StartValue = f;
@@ -587,7 +601,7 @@ void SetStartTime();
 
 
 
-std::function<void(SunEvent& e)> OnFinish;
+std::function<void(SunEvent& e)> OnFinish = 0;
 
 
 
@@ -749,21 +763,23 @@ std::unordered_map<std::string,Texture*> TexturesUniforms;
   v4.xy = xy;
   FourFloatUniforms.emplace(Id,v4);
  };
- const std::unordered_map<std::string,Texture*>& GetTexturesUniforms()const{
+ const std::unordered_map<std::string,Texture*>& GetTexturesUniforms(){
    return TexturesUniforms;
  };
- const std::unordered_map<std::string,vector4>& GetFourFloatsUniforms()const{
+ const std::unordered_map<std::string,vector4>& GetFourFloatsUniforms(){
    return FourFloatUniforms;
  };
-  const std::unordered_map<std::string,vector3>& GetThreeFloatsUniforms()const{
+  const std::unordered_map<std::string,vector3>& GetThreeFloatsUniforms(){
    return ThreeFloatUniforms;
  };
-  const std::unordered_map<std::string,vector2>& GetTwoFloatsUniforms()const{
+  const std::unordered_map<std::string,vector2>& GetTwoFloatsUniforms(){
    return TwoFloatsUniforms;
  };
-  const std::unordered_map<std::string,float>& GetFloatsUniforms()const{
+   std::unordered_map<std::string,float>& GetFloatsUniforms(){
    return FloatUniforms;
  };
+
+
 
 
 
@@ -797,21 +813,23 @@ class RenderCore{
 
 class SunAnimationsCore{
 private:
-std::unordered_map<std::string,std::unique_ptr<SunAnimation>> ActiveAnimations;
+std::unordered_map<std::string,SunAnimation> ActiveAnimations;
 
 public:
-std::unordered_map<std::string,std::unique_ptr<SunAnimation>>& GetActiveAnimations(){
+std::unordered_map<std::string,SunAnimation>& GetActiveAnimations(){
 return ActiveAnimations;
 };
 
-void AddActiveAnimation(std::string c,std::unique_ptr<SunAnimation> a){
-ActiveAnimations.emplace(c,std::move(a));
-};
+void AddActiveAnimation(std::string c,SunAnimation a){
+ActiveAnimations.emplace(c,a);
+}
 
 void FinishAnimation(std::string cid){
- auto* a = ActiveAnimations.find(cid)->second.get();
+ auto& a = ActiveAnimations.find(cid)->second;
  SunEvent e;
- //a->OnFinish(e);
+ if(a.OnFinish != 0){
+ a.OnFinish(e);
+ }
  ActiveAnimations.erase(cid);
 };
 
@@ -1120,6 +1138,8 @@ public:
 std::string Font;
 std::string Text;
 Component* Parent = nullptr;
+
+
 };
 
 
@@ -1127,7 +1147,30 @@ class PopUpComponent{
 private:
 Component* PopUpContainer = nullptr;
 std::unordered_map<std::string,Component*> PopUpChildrens;
+SunAnimation EntryAnimation;
+SunAnimation LeaveAnimation;
+bool EntryAnimationBool = false;
+bool LeaveAnimationBool = false;
+float EntryChildsDelay = 0;
+float ChildsStartTime = 0;
+bool ChildsAwait = false;
 public:
+void SetEntryAnimation(SunAnimation a){
+EntryAnimation = a;
+EntryAnimationBool = true;
+};
+
+void Update();
+
+void SetEntryChildsDelay(float d){
+EntryChildsDelay = d;
+};
+
+void SetLeaveAnimation(SunAnimation a){
+LeaveAnimation = a;
+LeaveAnimationBool = true;
+};
+
 Scene* OwnerScene = nullptr;
 void SetPopUpContainer(std::unique_ptr<Component> c,ComponentType ct);
 
@@ -1176,6 +1219,10 @@ class SunWorld{
     return it->second.get();
     }
     return nullptr;
+   };
+
+    std::unordered_map<std::string,std::unique_ptr<PopUpComponent>>& GetAllPopUps(){
+   return PopUps;
    };
 
  const std::unordered_map<std::string,std::unique_ptr<SunBodys>>& GetStaticBodysMap()const {
@@ -1342,7 +1389,7 @@ if (Owner && Owner->Parent) {
     bool WhileFlag = true;
     ActualNode = Owner.get();
   while(WhileFlag){
-  RelativeX += ActualNode->ComponentClass->PosX.ValuePixel;
+  RelativeX += ActualNode->ComponentClass->PosX.RenderValue;
   if(!ActualNode->Parent){
   WhileFlag = false;
   }else{
@@ -1363,7 +1410,7 @@ if (Owner && Owner->Parent) {
   float ParentWidth = SunCore::instance().WindowWidth;
   float ParentX = 0.0f;
   if(Parent){
-    ParentX = Parent->PosX.ValueResolved;
+    ParentX = Parent->PosX.RenderValue;
    ParentWidth = Parent->Width.ValueResolved;
      
   }
@@ -1387,7 +1434,7 @@ TransformOriginX();
     bool WhileFlag = true;
     ActualNode = Owner.get();
   while(WhileFlag){
-  RelativeY += ActualNode->ComponentClass->PosY.Value;
+  RelativeY += ActualNode->ComponentClass->PosY.RenderValue;
   if(!ActualNode->Parent){
   WhileFlag = false;
   }else{
@@ -1407,7 +1454,7 @@ TransformOriginX();
   float ParentHeight = SunCore::instance().WindowHeight;
   float ParentY = 0.0f;
   if(Parent){
-    ParentY = Parent->PosY.ValueResolved;
+    ParentY = Parent->PosY.RenderValue;
    ParentHeight = Parent->Height.ValueResolved;
   }
    PosY.ValueResolved = (ParentHeight * PosY.Value) + ParentY;
@@ -1437,24 +1484,35 @@ TransformOriginX();
  };
  }
 
+ 
+ if(Owner){
+  if(Owner->Parent){
+    if(Owner->Parent->ComponentClass->GetRenderDisplay() == DisplayType::None){
+      SetRenderDisplay(DisplayType::None);
+    
+    }
+  }
+ }
+
  if(LastDisplay != RenderDisplay){
-  LastDisplay = RenderDisplay;
   if(RenderDisplay == DisplayType::None){
     for(auto& c : Owner->Childrens){
    c->ComponentClass->SetRenderDisplay(RenderDisplay);
     }
   }
+  if(LastDisplay == DisplayType::None && RenderDisplay != DisplayType::None){
+    for(auto& c : Owner->Childrens){
+   c->ComponentClass->SetRenderDisplay(c->ComponentClass->GetDisplay());
+    }
+  }
+  LastDisplay = RenderDisplay;
  }
 
  if(Owner){
-  if(Owner->Parent){
-    if(Owner->Parent->ComponentClass->GetRenderDisplay() == DisplayType::None){
-      SetDisplay(DisplayType::None);
-      RenderDisplay = DisplayType::None;
-
-    }
-  }
+ for(auto& c : Owner->Childrens){
+  c->ComponentClass->Dirty = true;
  }
+ };
 
  UpdateRC();
  Dirty = false;
@@ -1517,6 +1575,10 @@ float ay = PosY.ValueResolved;
   RenderComponent->CharactersMargin = CharactersMargin;
   RenderComponent->TextAlignX = TextAlingX;
   RenderComponent->TextAlignY = TextAlingY;
+  RenderComponent->R = RGBA->R;
+  RenderComponent->A = RGBA->A;
+  RenderComponent->B = RGBA->B;
+  RenderComponent->G = RGBA->G;
   
  };
 
@@ -1896,7 +1958,21 @@ return RenderDisplay;
   Dirty = true;
 };
 
+void SetzIndex(int z){
+zIndex = z;
+}
 
+int GetzIndex(){
+  return zIndex;
+}
+
+bool GetPointerEvents(){
+  return PointerEvents;
+};
+
+void SetPointerEvents(bool b){
+  PointerEvents = b;
+}
   private:
   std::string Id;
   std::string Texture;
@@ -1922,6 +1998,8 @@ return RenderDisplay;
    DisplayType Display = DisplayType::Absolute;
    DisplayType LastDisplay = Display;
    DisplayType RenderDisplay = Display;
+   int zIndex = 1;
+   bool PointerEvents = true;
   
    
 
