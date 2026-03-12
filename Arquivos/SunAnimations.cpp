@@ -39,16 +39,16 @@ switch(a.Propertie){
   return c->GetY().ValueResolved;
   break;
    case AnimationProperties::R:
-  return c->GetRGBA()->R;
+  return c->GetRGBA().R;
   break;
   case AnimationProperties::B:
-  return c->GetRGBA()->B;
+  return c->GetRGBA().B;
   break;
   case AnimationProperties::G:
-  return c->GetRGBA()->G;
+  return c->GetRGBA().G;
   break;
   case AnimationProperties::Alpha:
-  return c->GetRGBA()->A;
+  return c->GetRGBA().A;
   break;
   case AnimationProperties::Height:
   return c->GetHeight().ValueResolved;

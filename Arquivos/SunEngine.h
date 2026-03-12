@@ -7,6 +7,7 @@
 #include "SunText.h"
 #include "SunRender.h"
 #include "SunAnimations.h"
+#include "SunTiled.h"
 
 
 void StartEngine(SunEngineConfig& Config);

@@ -11,6 +11,16 @@ void AddText(std::unique_ptr<Component> ComponentClass,std::string FontId,std::s
 void WindowManipulate(const std::string ManipulateType);
 
 
-void RunScene(Scene* RequestScene);
+void RunScene(std::string id);
 void ScenesLoop();
 void SunQuit();
+
+class SunScenesControl{
+ private:
+ 
+ public:
+ void StopScene(Scene* s){
+  s->State = SceneState::None;
+  
+ };
+};

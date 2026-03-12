@@ -10,14 +10,16 @@
 #include <memory>
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
-
+#include <nlohmann/json.hpp>
+#include <fstream>
 
 #include <chrono>
 
 void SpecialComponentsUpdate();
-
+void CameraInit();
 class SunCore;
 class Component;
+
 
 
 
@@ -462,12 +464,63 @@ switch(i){
 
 };
 
+class SunCamera{
+private:
+std::string FollowedComponent = "SunNull";
+float x = 0.0 + Width / 2;
+float y = 0.0 + Height / 2;
+vector4 CamLimit;  
+bool CamLimited = false;
+public:
+float GetY(){
+  return y;
+};
+float GetX(){
+  return x;
+};
+
+void SetCamPosition(float X,float Y){
+x = X + Width / 2;
+y = Y + Height / 2;
+};
+float Zoom = 1;
+float Width = 0.0;
+float Height = 0.0;
+float Smooth = 0.2f;
+
+std::string GetFollowedComponent(){
+  return FollowedComponent;
+};
+
+void StartFollow(std::string ComponentId);
+
+void SetSmmoth(float s){
+  Smooth = s; 
+};
+
+void SetCamLimits(float Left,float Bottom,float Right,float Top){
+CamLimit.x = Left;
+CamLimit.y = Bottom;
+CamLimit.z = Right;
+CamLimit.xy = Top;
+CamLimited = true;
+};
+
+vector4 GetCamLimits(){
+  return CamLimit;
+}
+
+void Update(float dt);
+
+};
+
 
 
 enum class SceneState{
   OnLoad,
   OnInit,
-  OnUpdate
+  OnUpdate,
+  None
 };
 enum class UnitType{
 Percent,Pixel
@@ -510,8 +563,10 @@ End
 
 class RGBAClass{
   public:
-  RGBAClass(float r,float g,float b,float a):R(r),G(g),B(b),A(a){}
-  float R,G,B,A;
+  float R=0.0;
+  float G=0.0;
+  float B=0.0f;
+  float A=1.0f;
 };
 
 enum class AnimationProperties{
@@ -612,8 +667,14 @@ std::function<void(SunEvent& e)> OnFinish = 0;
 
 
 class Scene{
+  private:
+  std::vector<Component*> SceneComponents;
 
     public:
+  void AddComponentToScene(Component* c){
+    SceneComponents.push_back(c);
+  };
+  void  StopThisScene();
     std::string SceneID;
     SceneState State;
   virtual void SceneConfigs();
@@ -655,10 +716,10 @@ class RenderComponentClass{
   std::string Text = "None";
   float X;
     float Y;
-    float R; 
-float G;
-float B;
-float A;
+    float R = 1.0; 
+float G = 1.0;
+float B = 1.0;
+float A = 1.0;
 float BorderColorR,BorderColorG,BorderColorB,BorderColorA = 1.0f;
 float BorderWidth = 0.0f;
 Material* Material = nullptr;
@@ -669,6 +730,7 @@ Align TextAlignY;
 Component* OriginalComponent;
 OriginClass OriginX,OriginY;
 std::string TextureId;
+int zIndex = 1;
 std::string TextureMask = "None";
 bool IsText = false;
     Scene* OwnerScene;
@@ -695,7 +757,7 @@ class SunEngineConfig{
         };
         class SunScenes{
             public:
-        std::vector<Scene*> Scenes;
+        std::string Scenes;
         
         };
         class RenderList{
@@ -712,6 +774,7 @@ class SunEngineConfig{
 
 class Texture{
     public:
+    unsigned char* Data;
     std::string Id;
     GLuint GPUID;
     int Width;
@@ -772,7 +835,7 @@ std::unordered_map<std::string,Texture*> TexturesUniforms;
   const std::unordered_map<std::string,vector3>& GetThreeFloatsUniforms(){
    return ThreeFloatUniforms;
  };
-  const std::unordered_map<std::string,vector2>& GetTwoFloatsUniforms(){
+  std::unordered_map<std::string,vector2>& GetTwoFloatsUniforms(){
    return TwoFloatsUniforms;
  };
    std::unordered_map<std::string,float>& GetFloatsUniforms(){
@@ -972,10 +1035,20 @@ class BodySunPhysic{
   vector2 Velocity;
   vector2 AccumulatedForces;
   Body* Owner = nullptr;
-
+  bool IgnoreGravity = false;
+  
 
   public:
+  bool OnGround = false;
+  bool Sleeping = false;
+  float SleepTimer = 0.0f; 
+  bool GetIgnoreGravity(){
+return IgnoreGravity;
+  };
 
+  void SetIgnoreGravity(bool b){
+    IgnoreGravity = b;
+  }
   const Body* GetOwner() const{
    return Owner;
   };
@@ -1033,7 +1106,7 @@ class Body{
    bap ArcadePhysic = nullptr;
  public:
 std::string Id;
-float Width,Height,OffsetX = 0.0f,OffsetY = 0.0f,WorldX = OffsetX,WorldY = OffsetY;
+float Width,Height,OffsetX = 0.0f,OffsetY = 0.0f,WorldX = 0.0f,WorldY = 0.0f;
 WorldGridCell WorldGridCell;
 bool Collides = true;
 
@@ -1083,6 +1156,7 @@ class SunBodys{
 
 
  public:
+
  
 Component* OwnerComponent = nullptr;
  std::string GetId();
@@ -1155,6 +1229,7 @@ float EntryChildsDelay = 0;
 float ChildsStartTime = 0;
 bool ChildsAwait = false;
 public:
+bool ChildsInstantLeave = false;
 void SetEntryAnimation(SunAnimation a){
 EntryAnimation = a;
 EntryAnimationBool = true;
@@ -1184,6 +1259,255 @@ DisplayType GetDisplay();
 
 };
 
+using j = nlohmann::json;
+
+class TiledMap;
+
+class Tile{
+private:
+Texture* TileTexture = nullptr;
+std::string Name;
+std::string TileMaterial = "SunNull";
+public:
+int tilecount;
+ int lastgid;
+ j jsonTile;
+    int firstgid;
+   float TileWidth;
+   float TileHeight; 
+void SetName(std::string name){
+  Name = name;
+};
+
+std::string GetName(){
+  return Name;
+};
+void SetTexture(std::string id);
+Texture* GetTexture(){
+  return TileTexture;
+}
+void SetMaterial(std::string MaterialId);
+
+std::string GetMaterial(){
+  return TileMaterial;
+}
+};
+
+
+
+
+class TileLayer{
+private:
+std::vector<int>LayerTiles;
+std::string Name;
+public:
+
+void SetName(std::string name){
+  Name = name;
+};
+
+std::string GetName(){
+  return Name;
+};
+TiledMap* MapOwner = nullptr;
+
+
+void AddTile(int gid);
+};
+
+class TiledMap{
+private:
+std::string Name;
+std::unordered_map<std::string,std::unique_ptr<Tile>> MapTiles;
+std::unordered_map<std::string,std::unique_ptr<TileLayer>> MapLayers;
+std::unordered_map<std::string,Component*> MapSunComponents;
+j MapFile;
+public:
+int MapWidth = 0;
+int MapHeight = 0;
+int TileHeight = 0;
+int TileWidth = 0;
+j* FindLayer(std::string id){
+for(auto& l : MapFile["layers"]){
+if(l["name"] == id){
+return &l;
+} 
+}
+return nullptr;
+};
+
+Tile* GetTileWithGID(int gid){
+for(auto& t : MapTiles){
+if(gid>=t.second->firstgid && gid<t.second->lastgid){
+return t.second.get();
+};
+}
+return nullptr;
+};
+
+j* FindTile(std::string id){
+for(auto& l : MapFile["tilesets"]){
+if(l["name"] == id){
+return &l;
+} 
+}
+return nullptr;
+};
+
+j FindPropertie(j& props,std::string propname){
+auto& propsobj = props;
+for(int i=0;i<propsobj.size();i++){
+auto& prop = propsobj[i];
+if(prop["name"] == propname){
+  return props[i];
+}
+}
+return props;
+};
+void AddTile(std::string id,std::unique_ptr<Tile>t){
+  t->SetName(id);
+  auto* tile = FindTile(id);
+  t->firstgid = (*tile)["firstgid"];
+  int tcount =  (*tile)["tilecount"];
+    t->lastgid = t->firstgid +tcount;
+    t->TileHeight = (*tile)["tileheight"];
+    t->TileWidth = (*tile)["tilewidth"];
+    t->jsonTile = (*tile);
+ MapTiles.emplace(id,std::move(t));
+};
+void AddLayer(std::string id,std::unique_ptr<TileLayer>t);
+
+void SetMapFile(j m){
+ MapFile = m;
+}
+
+j GetMapFile(){
+return MapFile;
+};
+
+void SetName(std::string name){
+  Name = name;
+};
+
+std::string GetName(){
+  return Name;
+};
+
+Tile* GetTile(std::string id){
+auto it = MapTiles.find(id);
+if(it != MapTiles.end()){
+  return it->second.get();
+}
+return nullptr;
+};
+TileLayer* GetLayer(std::string id){
+auto it = MapLayers.find(id);
+if(it != MapLayers.end()){
+  return it->second.get();
+}
+return nullptr;
+};
+
+
+
+
+
+};
+
+class SunTiled{
+private:
+std::unordered_map<std::string,std::unique_ptr<TiledMap>> TiledMaps; 
+public:
+ void AddTiledMap(std::string mapid,std::string mappath);
+ TiledMap* GetTiledMap(std::string id){
+  auto it = TiledMaps.find(id);
+  if(it != TiledMaps.end()){
+    return it->second.get();
+  }
+  return nullptr;
+ }
+
+ void AddLayerToWorld(std::string map,std::string Layer,Scene* OwnerScene);
+};
+
+
+class GravityClass{
+  private:
+  float GravityForce = 220.0;
+
+  public:
+  float GetGravity(){
+    return GravityForce;
+  }
+};
+
+class AnimationFrame{
+private:
+
+public:
+vector2 uvEnd;
+vector2 uvStart;
+float Width;
+float Height;
+};
+
+class FrameAnimation{
+  private:
+std::vector<std::string> Frames;
+
+int ActualFrame = 0;
+GLuint AnimationTexture;
+
+  
+  public:
+  float FrameTimer = 0.0f;
+int FrameRate = 60;
+int Repeat = 1;
+
+GLuint GetAnimationTexture(){
+  return AnimationTexture;
+};
+void UpdateActualFrame();
+std::unordered_map<int,std::unique_ptr<AnimationFrame>> AnimationFrames;
+void SetAnimationTexture(GLuint);
+
+int GetActualFrame(){
+  return ActualFrame;
+}
+
+std::vector<std::string>& GetFrames(){
+  return Frames;
+}
+
+void SetFrames(std::vector<std::string> v){
+Frames = v;
+};
+};
+
+class SunFramesAnimations{
+private:
+std::unordered_map<std::string,std::unique_ptr<FrameAnimation>> FrameAnimations;
+
+
+public:
+FrameAnimation* GetFrameAnimation(std::string a){
+ auto it = FrameAnimations.find(a);
+ if(it != FrameAnimations.end()){
+  return it->second.get();
+ }
+ return nullptr;
+};
+
+void CreateFrameAnimation(std::string id,std::unique_ptr<FrameAnimation> fra){
+ //MakeAnimationAtlas(id,fra.get());
+FrameAnimations.emplace(id,std::move(fra));
+}
+
+void MakeAnimationAtlas(std::string Id,FrameAnimation* fra);
+
+};
+
+
 class SunWorld{
   private:
   SunWorld(){};
@@ -1192,7 +1516,17 @@ class SunWorld{
   std::unordered_map<std::string,Component*> BodysComponents;
   std::unordered_map<std::string,std::unique_ptr<Material>> Materials;
   std::unordered_map<std::string,std::unique_ptr<PopUpComponent>> PopUps;
+    bool NewzIndex = false;
   public:
+
+  bool GetzIndexProtocol(){
+    return NewzIndex;
+  }
+
+  void UpdateZIndex(bool b){
+  NewzIndex = b;
+  };
+  void DeleteComponent(std::string Id);
  
    void AddPopUpToWorld(std::string id, std::unique_ptr<PopUpComponent> p){
    PopUps.emplace(id,std::move(p));
@@ -1228,14 +1562,7 @@ class SunWorld{
  const std::unordered_map<std::string,std::unique_ptr<SunBodys>>& GetStaticBodysMap()const {
     return StaticBodys;
    };
-   void AddNewStaticBody(std::string Id,std::unique_ptr<SunBodys> StaticBody){
-      for(auto& B : StaticBody.get()->GetBodysMap()){
- CollisionsWorld.AddNewBodyToWorld(B.second.get());
-}
-
-    StaticBodys.emplace(Id,std::move(StaticBody));
- 
-   };
+   void AddNewStaticBody(std::string Id,std::unique_ptr<SunBodys> StaticBody);
  
    const std::unordered_map<std::string,std::unique_ptr<Component>>& GetWorldComponentsMap()const{
     return WorldComponents;
@@ -1261,7 +1588,7 @@ class SunWorld{
 
     void AddMaterialToWorld(std::string MaterialId,std::string ShaderId);
 
-    
+     GravityClass SunGravity;
    
 
 };
@@ -1271,14 +1598,7 @@ class SunBodysControl{
 private:
 std::vector<SunBodys*> BodysVector;
 public:
-void AddSunBody(SunBodys* Body){
-  std::cout << "AddSunBody: " << Body << "\n";
- BodysVector.push_back(Body);
- 
- for(auto& B : Body->GetBodysMap()){
- SunWorld::instance().CollisionsWorld.AddNewBodyToWorld(B.second.get());
-}
-};
+void AddSunBody(SunBodys* Body);
 const std::vector<SunBodys*>& GetSunBodysVector()const{
 return BodysVector;
 };
@@ -1286,6 +1606,24 @@ void Update();
 
 };
 
+
+class SunScenesCore{
+private:
+std::unordered_map<std::string,std::unique_ptr<Scene>> Scenes;
+public:
+void AddScene(std::string id,std::unique_ptr<Scene> s){
+   
+Scenes.emplace(id,std::move(s));
+};
+Scene* GetScene(std::string id){
+  auto it = Scenes.find(id);
+  if(it != Scenes.end()){ 
+  return Scenes.find(id)->second.get();
+  }
+  return nullptr;
+};
+
+};
 
 
 class SunCore {
@@ -1305,10 +1643,13 @@ class SunCore {
     SunBodysControl BodysControl;
     SunWorld& SunWorld = SunWorld.instance();
     SunTime SunTime;
+    SunScenesCore SunScenes;
     SunFonts SunFontsControl;
     SunShadersCore SunShaders;
     SunAnimationsCore SunAnimations;
-    
+    SunTiled SunTiledCore;
+    SunCamera Camera;
+    SunFramesAnimations FrameAnimations;
 
     static SunCore& instance(){
         static SunCore instance;
@@ -1514,6 +1855,10 @@ TransformOriginX();
  }
  };
 
+ if(Body){
+  ResolveBody();
+ }
+
  UpdateRC();
  Dirty = false;
 
@@ -1575,11 +1920,11 @@ float ay = PosY.ValueResolved;
   RenderComponent->CharactersMargin = CharactersMargin;
   RenderComponent->TextAlignX = TextAlingX;
   RenderComponent->TextAlignY = TextAlingY;
-  RenderComponent->R = RGBA->R;
-  RenderComponent->A = RGBA->A;
-  RenderComponent->B = RGBA->B;
-  RenderComponent->G = RGBA->G;
-  
+  RenderComponent->R = RGBA.R;
+  RenderComponent->A = RGBA.A;
+  RenderComponent->B = RGBA.B;
+  RenderComponent->G = RGBA.G;
+  RenderComponent->zIndex = zIndex;
  };
 
  void ResolveBody(){ 
@@ -1590,11 +1935,11 @@ float ay = PosY.ValueResolved;
 
     UnitClass BodyX;
     BodyX.Unit = UnitType::Pixel;
-    BodyX.Value = this->PosX.RenderValue + InnerBody.second.get()->OffsetX;
+    BodyX.Value = (this->PosX.RenderValue + InnerBody.second.get()->OffsetX);
 
     UnitClass BodyY;
     BodyY.Unit = UnitType::Pixel;
-    BodyY.Value = this->PosY.ValueResolved + InnerBody.second.get()->OffsetY;
+    BodyY.Value = (this->PosY.RenderValue + InnerBody.second.get()->OffsetY);
     InnerBody.second->WorldX = BodyX.Value;
    InnerBody.second->WorldY = BodyY.Value;
     
@@ -1717,7 +2062,7 @@ UpdateRC();
 
   Component(std::string Id,UnitClass W,UnitClass H,UnitClass X,
     UnitClass Y, OriginClass OriginX  = OriginClass::Center, OriginClass OriginY = OriginClass::Center):
-    Id(Id),Width(W),Height(H),PosX(X),PosY(Y),OriginX(OriginX),OriginY(OriginY),RGBA(std::make_unique<RGBAClass>(1.0f,1.0f,1.0f,1.0f)){}
+    Id(Id),Width(W),Height(H),PosX(X),PosY(Y),OriginX(OriginX),OriginY(OriginY){}
 
   UnitClass GetX(){
     return PosX;
@@ -1731,6 +2076,7 @@ UpdateRC();
   UnitClass GetWidth(){
     return Width;
   };
+
 
   
   UnitClass GetHeight(){
@@ -1752,8 +2098,8 @@ UpdateRC();
   };
 
   
-  RGBAClass* GetRGBA(){
-    return RGBA.get();
+  RGBAClass& GetRGBA(){
+    return RGBA;
   };
 
   
@@ -1790,10 +2136,10 @@ UpdateRC();
    };
 
      void SetRGBA(float r, float g, float b, float a) {
-    RGBA->R = r;
-    RGBA->G = g;
-    RGBA->B = b;
-    RGBA->A = a;
+    RGBA.R = r;
+    RGBA.G = g;
+    RGBA.B = b;
+    RGBA.A = a;
     Dirty = true;
 }
     void SetOwner(std::unique_ptr<NodeClass> Value){
@@ -1960,12 +2306,16 @@ return RenderDisplay;
 
 void SetzIndex(int z){
 zIndex = z;
+Dirty = true;
+SunCore::instance().SunWorld.UpdateZIndex(true);
 }
 
 int GetzIndex(){
   return zIndex;
 }
-
+void SetDirty( bool b){
+Dirty = b;
+}
 bool GetPointerEvents(){
   return PointerEvents;
 };
@@ -1973,6 +2323,14 @@ bool GetPointerEvents(){
 void SetPointerEvents(bool b){
   PointerEvents = b;
 }
+
+FrameAnimation* GetAnimation(){
+return Animation;
+};
+
+void SetAnimation(std::string aid){
+Animation = SunCore::instance().FrameAnimations.GetFrameAnimation(aid);
+};
   private:
   std::string Id;
   std::string Texture;
@@ -1986,7 +2344,7 @@ void SetPointerEvents(bool b){
    BorderClass Border;
    std::unique_ptr<NodeClass> Owner = nullptr;
    RenderComponentClass* RenderComponent = nullptr;
- std::unique_ptr<RGBAClass> RGBA;
+ RGBAClass RGBA;
    bool Dirty = true;
    std::unique_ptr<SunBodys> Body = nullptr;
    Align TextAlingX = Align::None;
@@ -2000,6 +2358,7 @@ void SetPointerEvents(bool b){
    DisplayType RenderDisplay = Display;
    int zIndex = 1;
    bool PointerEvents = true;
+   FrameAnimation* Animation = nullptr;
   
    
 

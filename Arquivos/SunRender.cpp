@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include "SunEngineCore.h"
 #include "SunRender.h"
+#include <algorithm>
 float Ease(float t, EaseTypes type)
 {
     switch(type)
@@ -34,16 +35,16 @@ switch(a.Propertie){
   return c->GetY().ValueResolved;
   break;
    case AnimationProperties::R:
-  return c->GetRGBA()->R;
+  return c->GetRGBA().R;
   break;
   case AnimationProperties::B:
-  return c->GetRGBA()->B;
+  return c->GetRGBA().B;
   break;
   case AnimationProperties::G:
-  return c->GetRGBA()->G;
+  return c->GetRGBA().G;
   break;
   case AnimationProperties::Alpha:
-  return c->GetRGBA()->A;
+  return c->GetRGBA().A;
   break;
   case AnimationProperties::Height:
   return c->GetHeight().ValueResolved;
@@ -63,6 +64,13 @@ void ApplyValue(float v, Component* c,Animations a){
       u.Unit = UnitType::Pixel;
       u.Value = v;
        c->SetX(u);
+      break;
+    }
+      case AnimationProperties::Width:{
+      UnitClass u;
+      u.Unit = UnitType::Pixel;
+      u.Value = v;
+       c->SetWidth(u);
       break;
     }
    }
@@ -155,15 +163,37 @@ void RenderDebug(){
     }
 }
 
+void ZIndexProtocol(){
+    if(SunCore::instance().SunWorld.GetzIndexProtocol()){
+        
+        std::stable_sort(
+            SunCore::instance().SunEngineConfig->Render.RenderVector.begin(),
+            SunCore::instance().SunEngineConfig->Render.RenderVector.end(),
+            [](RenderComponentClass* a, RenderComponentClass* b){
+             
+              //  std::cout << "\nzIndex: " << a->Id << "  " << a->OriginalComponent->GetzIndex(); 
+                 //  std::cout << "\nzIndex: " << b->Id << "  " << b->OriginalComponent->GetzIndex(); 
+                if(a->OriginalComponent->GetzIndex() == b->OriginalComponent->GetzIndex()){
+                    return a->Y < b->Y;
+                }
+        
+                return a->OriginalComponent->GetzIndex()< b->OriginalComponent->GetzIndex();
+            }
+        );
+SunCore::instance().SunWorld.UpdateZIndex(false);
+    }
+}
+
 void EngineRender(float dt,float t){
     glClearColor(0, 0, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
+    
     for(auto& a : SunCore::instance().SunAnimations.GetActiveAnimations()){
      auto& ani = a.second;
      std::string s = a.first;
      RenderAnimation(SunCore::instance().SunWorld.GetWorldComponentsMap().find(s)->second.get(),a.second);
     }
-    
+    ZIndexProtocol();
    for (auto& rc : SunCore::instance().SunEngineConfig->Render.RenderVector) {
     auto& c = rc->OriginalComponent;
     rc->OriginalComponent->ResolveComponent();
@@ -385,6 +415,7 @@ void Renderer::LoadShaders(SunEngineConfig& Config){
                 if(uFlipY == 1) Uv.y = 1.0 - Uv.y;
                 if(uFlipX == 1) Uv.x = 1.0 - Uv.x;
                 uBaseColor *= texture(uTexture,Uv);
+                
                 }
                
                 int uShapeType = ShapeType;

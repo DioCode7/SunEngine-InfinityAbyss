@@ -12,6 +12,7 @@
 #include "SunFunctions.h"
 #include "SunImages.h"
 #include "SunText.h"
+#include "SunTiled.h"
 
 auto& Core = SunCore::instance();
 
@@ -26,7 +27,7 @@ void SunEngineGameLoop(){
        float t = Time.GetTime();
       float DeltaTime = Time.GetDeltaTime();
      // DeltaTime = std::min(DeltaTime,0.033f);
-
+    SunCore::instance().Camera.Update(DeltaTime);
     SunDispatchs();
     SunUpdateInput();
     ScenesLoop();
@@ -35,6 +36,7 @@ void SunEngineGameLoop(){
    Core.SunWorld.CollisionsWorld.CollisionsUpdate(DeltaTime);
    Core.SunWorld.CollisionsWorld.PhysicUpdate(DeltaTime);
 
+     
     
 
    };
@@ -56,8 +58,12 @@ void StartEngine(SunEngineConfig& Config)
     RenderMethods.InitSDLContext(Config);
     RenderMethods.LoadShaders(Config);
     TextMethods.Init();
-    Scene* FirstScene = Config.SunScenes.Scenes[0];
+    CameraInit();
+
+   
+    std::string FirstScene = Config.SunScenes.Scenes;
     RunScene(FirstScene);
+    
     SunCore::instance().ApplicationState = "Running";
    SunEngineGameLoop();
 

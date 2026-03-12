@@ -11,6 +11,8 @@
     SunTexturesControl SunTextures;
     SunListeners SunListenersControl;
     SunText SunTextControl;
+
+    class GameStartScene;
    
     class Player;
     
@@ -1605,6 +1607,7 @@ MenuTree->AddMaterial("MenuTreeMaterial");
   
 
   auto LeavePopUp = std::make_unique<PopUpComponent>();
+  LeavePopUp->OwnerScene = this;
   UnitClass LeavePopUpContainerX;
   LeavePopUpContainerX.Unit = UnitType::Percent;
   LeavePopUpContainerX.Value = -0.3f;
@@ -1671,7 +1674,7 @@ MenuTree->AddMaterial("MenuTreeMaterial");
 
   auto LeavePopUpButtonNo = std::make_unique<Component>("LeavePopUpButtonNo",LeavePopUpButtonNoW,LeavePopUpButtonNoH,LeavePopUpButtonNoX,LeavePopUpButtonNoY,
   OriginClass::End,OriginClass::Center);
-  LeavePopUpButtonNo->SetRGBA(0.0,0.0,0.0,1.0);
+  LeavePopUpButtonNo->SetRGBA(0.0,0.0,0.0,0.0);
 
 
   UnitClass LeavePopUpTextNoX;
@@ -1723,7 +1726,7 @@ MenuTree->AddMaterial("MenuTreeMaterial");
 
   auto LeavePopUpButtonYes = std::make_unique<Component>("LeavePopUpButtonYes",LeavePopUpButtonYesW,LeavePopUpButtonYesH,LeavePopUpButtonYesX,LeavePopUpButtonYesY,
   OriginClass::Start,OriginClass::Center);
-  LeavePopUpButtonYes->SetRGBA(0.0,0.0,0.0,1.0);
+  LeavePopUpButtonYes->SetRGBA(0.0,0.0,0.0,0.0);
 
 
   UnitClass LeavePopUpTextYesX;
@@ -1757,7 +1760,7 @@ MenuTree->AddMaterial("MenuTreeMaterial");
 
 
 
-
+ LeavePopUp->ChildsInstantLeave = true;
 
 
      LeavePopUpContainer->SetTexture("PopUpShadowsContainer");
@@ -1798,6 +1801,11 @@ MenuTree->AddMaterial("MenuTreeMaterial");
       uniform sampler2D uSunTextureMask;
       uniform float uSunTime;
       uniform float Start;
+      uniform float EndTime;
+      uniform float YesHoverStart;
+      uniform float YesHoverEnd;
+      uniform float YesOnHover;
+      uniform vec2 hoverspot;
       out vec4 FragColor;
 
 
@@ -1845,6 +1853,30 @@ MenuTree->AddMaterial("MenuTreeMaterial");
          float d = distance(uv, vec2(0.5));
      float t = smoothstep(0.0,startedge,dt);
 
+     float end_dt = uSunTime - EndTime;
+        float end_edge = 1.0;
+     float end_t = smoothstep(end_edge,0.0,end_dt);
+
+     float end_distance = smoothstep(0.0,1.0,end_dt);
+
+float end_progress = clamp(end_dt / end_edge, 0.0, 1.0);
+float edge_noise = fbm(uv * 20.0 + uSunTime);
+
+float end_sweep = smoothstep(
+    1.0 - end_progress - edge_noise * 0.1,
+    1.0 - end_progress,
+    uv.x
+);
+     float yes_hover_dt = uSunTime - YesHoverStart;
+     float yes_hover_edge = 1.5;
+     float yes_hover_t = smoothstep(0.0,yes_hover_edge,yes_hover_dt);
+
+        float yes_hover_end_dt = uSunTime - YesHoverEnd;
+     float yes_hover_end_edge = 1.5;
+     float yes_hover_end_t = smoothstep(0.0,yes_hover_end_edge,yes_hover_end_dt);
+
+ 
+
       float fade = smoothstep(0.01, 0.99, d);
 
      float dirx = smoothstep(0.0, 0.5, uv.x) - smoothstep(0.5, 1.0, uv.x);
@@ -1860,21 +1892,35 @@ float sweep = smoothstep(progress - 0.1, progress, uv.x);
 
 float StartNoise = (line * sweep);
       float Noise = fbm((uv * dirx) * 10.0 + uSunTime * 0.5);
+     float end_noise = (fbm(vec2((uv.x * uv.y * dirx) * 100.0 + uSunTime * 10.0, uv.y * 10.0)));
+    
+  
 
      
 
           vec4 tex = texture(uSunTexture,uv);
          float FinalNoise = mix(StartNoise,Noise,t);
-         tex.a -= FinalNoise * fade * 0.5;
-         uv -= FinalNoise * fade * 0.5;
+         tex.a -= mix(FinalNoise,end_noise,end_t) * fade * 0.5;
+         uv -= mix(FinalNoise,end_noise,end_t) * fade * 0.5;
+
+         float yes_distance = smoothstep(0.0,1.0,0.3 - distance(uv,hoverspot));
+
+          float hover_noise = fbm((uv * dirx) * 30.0 + uSunTime * 3.0);
+          float start_hover_noise = fbm(vec2((uv.y * uv.x * diry) * 100.0 + uSunTime * 20.0,uv.x * 10.0)) * 0.2;
+          
+          float hover_final_noise = mix(start_hover_noise,hover_noise,yes_hover_t);
+
+
+
+          tex.a -= (hover_final_noise * yes_distance) * (YesOnHover + smoothstep(yes_hover_end_edge,0.0,yes_hover_end_t));
       
          if(tex.a < 0.95){
          discard;
          };
          tex.a = 1.0;
-         tex.r = 0.0;
+         tex.r = 0.0 + ((hover_final_noise * yes_distance) * (YesOnHover + (smoothstep(yes_hover_end_edge,0.0,yes_hover_end_t) * 0.6))) * 2.0;
          tex.b = 0.0;
-         tex.g = 0.0;
+         tex.g =  0.0 + ((hover_final_noise * yes_distance) * (YesOnHover + (smoothstep(yes_hover_end_edge,0.0,yes_hover_end_t)* 0.6))) * 0.3;
 
          if(uv.x < 0.05 || uv.x > 0.95){
          discard;
@@ -1882,6 +1928,9 @@ float StartNoise = (line * sweep);
           if(uv.y < 0.05 || uv.y > 0.95){
          discard;
          }
+
+
+        
        
         
         
@@ -1898,12 +1947,38 @@ float StartNoise = (line * sweep);
    auto StartUniform = std::make_unique<ShaderUniform>();
    StartUniform->Type = UniformType::OneFloat;
 
+   auto EndTimeUniform = std::make_unique<ShaderUniform>();
+   EndTimeUniform->Type = UniformType::OneFloat;
+
+
+   auto YesStartUniform = std::make_unique<ShaderUniform>();
+   YesStartUniform->Type = UniformType::OneFloat;
+
+   
+   auto YesEndUniform = std::make_unique<ShaderUniform>();
+   YesEndUniform->Type = UniformType::OneFloat;
+   
+   auto YesOnHoverUniform = std::make_unique<ShaderUniform>();
+   YesOnHoverUniform->Type = UniformType::TwoFLoat;
+
+     auto YesSpotHoverUniform = std::make_unique<ShaderUniform>();
+   YesSpotHoverUniform->Type = UniformType::OneFloat;
    PopUpShadowsContainerShader->AddUniform("Start",std::move(StartUniform));
+      PopUpShadowsContainerShader->AddUniform("EndTime",std::move(EndTimeUniform));
+   PopUpShadowsContainerShader->AddUniform("YesHoverStart",std::move(YesStartUniform));
+    PopUpShadowsContainerShader->AddUniform("YesHoverEnd",std::move(YesEndUniform));
+   PopUpShadowsContainerShader->AddUniform("YesOnHover",std::move(YesOnHoverUniform));
+     PopUpShadowsContainerShader->AddUniform("hoverspot",std::move(YesSpotHoverUniform));
     SunCore::instance().SunShaders.AddShaderToWorld("PopUpShadowsContainerShader",std::move(PopUpShadowsContainerShader));
 
     SunCore::instance().SunWorld.AddMaterialToWorld("PopUpShadowsContainerMaterial","PopUpShadowsContainerShader");
      Material* PopUpShadowsContainerMaterial = SunCore::instance().SunWorld.GetMaterial("PopUpShadowsContainerMaterial");
    PopUpShadowsContainerMaterial->AddFloatUniform("Start",0);
+    PopUpShadowsContainerMaterial->AddFloatUniform("EndTime",0);
+   PopUpShadowsContainerMaterial->AddFloatUniform("YesOnHover",0);
+   PopUpShadowsContainerMaterial->AddFloatUniform("YesHoverStart",0);
+   PopUpShadowsContainerMaterial->AddFloatUniform("YesHoverEnd",0);
+   PopUpShadowsContainerMaterial->AddTwoFloatsUniform("hoverspot",0,0);
 
 LeavePopUpContainer->SetzIndex(100);
 
@@ -1958,7 +2033,7 @@ LeavePopUpContainer->SetzIndex(100);
    LeavePopUpLeaveAnimationXUnitClassInit.Value = 0.5f;
    LeavePopUpLeaveAnimationX.Target = LeavePopUpLeaveAnimationXUnitClass;
    LeavePopUpLeaveAnimationX.SetFixedStartValue(LeavePopUpLeaveAnimationXUnitClassInit);
-   LeavePopUpLeaveAnimation.SetDuration(0.5);
+   LeavePopUpLeaveAnimation.SetDuration(0.3);
    LeavePopUpLeaveAnimation.AddInnerAnimation(LeavePopUpLeaveAnimationX);
 
      LeavePopUp->SetLeaveAnimation(LeavePopUpLeaveAnimation);
@@ -1971,8 +2046,11 @@ LeavePopUpContainer->SetzIndex(100);
   SunCore::instance().SunWorld.ShowPopUp("LeavePopUp");
     PopUpShadowsContainerMaterial->GetFloatsUniforms().find("Start")->second = SunCore::instance().SunTime.GetTime();
     }else{
+       PopUpShadowsContainerMaterial->GetFloatsUniforms().find("EndTime")->second = SunCore::instance().SunTime.GetTime();
       SunCore::instance().SunWorld.DisablePopUp("LeavePopUp");
+
     }
+       PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesOnHover")->second = 0;
   }; 
   SunCore::instance().SunBrain.NewListener(std::move(LeaveButtonListener));  
 
@@ -1982,7 +2060,6 @@ LeavePopUpContainer->SetzIndex(100);
   SunEventTrigger LeavePopUpNoListenerTrigger;
   LeavePopUpNoListenerTrigger.SetMouseTrigger(MouseTriggersType::PointerDown,MouseButtons::LMB,
   SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpButtonNo")->second.get());
-  LeavePopUpNoListenerTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyDown,KeyCodes::A);
   LeavePopUpNoListener->UseFn = true;
   LeavePopUpNoListener->Trigger = LeavePopUpNoListenerTrigger;
   LeavePopUpNoListener->Id = "LeavePopUpNoListener";
@@ -2006,7 +2083,7 @@ LeavePopUpContainer->SetzIndex(100);
   SunEventTrigger LeavePopUpYesListenerTrigger;
   LeavePopUpYesListenerTrigger.SetMouseTrigger(MouseTriggersType::PointerDown,MouseButtons::LMB,
   SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpButtonYes")->second.get());
-  LeavePopUpYesListenerTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyDown,KeyCodes::A);
+
   LeavePopUpYesListener->UseFn = true;
   LeavePopUpYesListener->Trigger = LeavePopUpYesListenerTrigger;
   LeavePopUpYesListener->Id = "LeavePopUpYesListener";
@@ -2025,18 +2102,27 @@ LeavePopUpContainer->SetzIndex(100);
 
     auto LeavePopUpYesHoverListener = std::make_unique<SunListener>();
   SunEventTrigger LeavePopUpYesHoverListenerTrigger;
-  LeavePopUpYesHoverListenerTrigger.SetMouseTrigger(MouseTriggersType::MouseIn,MouseButtons::LMB,
+  LeavePopUpYesHoverListenerTrigger.SetMouseTrigger(MouseTriggersType::MouseOn,MouseButtons::LMB,
   SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpButtonYes")->second.get());
-  LeavePopUpYesHoverListenerTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyDown,KeyCodes::A);
+
   LeavePopUpYesHoverListener->UseFn = true;
   LeavePopUpYesHoverListener->Trigger = LeavePopUpYesHoverListenerTrigger;
   LeavePopUpYesHoverListener->Id = "LeavePopUpYesHoverListener";
 
   
-  LeavePopUpYesHoverListener->Fn = [this](SunEvent& e){
-    SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpTextYes")->second->SetRGBA(0.0,0.0,0.0,1.0);
+  LeavePopUpYesHoverListener->Fn = [this,PopUpShadowsContainerMaterial](SunEvent& e){
+    SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpTextYes")->second->SetRGBA(1.0,1.0,1.0,1.0);
+     vector2 spot;
+    spot.x = 0.38;
+    spot.y = 0.6;
+     PopUpShadowsContainerMaterial->GetTwoFloatsUniforms().find("hoverspot")->second = spot;
+   if(PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesOnHover")->second == 0){
+    PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesHoverStart")->second = SunCore::instance().SunTime.GetTime();
+   }
+   PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesOnHover")->second = 1;
 
   }; 
+
 
 
   
@@ -2045,6 +2131,126 @@ LeavePopUpContainer->SetzIndex(100);
 
 
 
+
+  auto LeavePopUpYesHoverOutListener = std::make_unique<SunListener>();
+  SunEventTrigger LeavePopUpYesHoverOutListenerTrigger;
+  LeavePopUpYesHoverOutListenerTrigger.SetMouseTrigger(MouseTriggersType::MouseOut,MouseButtons::LMB,
+  SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpButtonYes")->second.get());
+  LeavePopUpYesHoverOutListenerTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyDown,KeyCodes::A);
+  LeavePopUpYesHoverOutListener->UseFn = true;
+  LeavePopUpYesHoverOutListener->Trigger = LeavePopUpYesHoverOutListenerTrigger;
+  LeavePopUpYesHoverOutListener->Id = "LeavePopUpYesHoverOutListener";
+
+  
+  LeavePopUpYesHoverOutListener->Fn = [this,PopUpShadowsContainerMaterial](SunEvent& e){
+    SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpTextYes")->second->SetRGBA(1.0,1.0,1.0,1.0);
+    vector2 spot;
+    spot.x = 0.38;
+    spot.y = 0.6;
+     PopUpShadowsContainerMaterial->GetTwoFloatsUniforms().find("hoverspot")->second = spot;
+  if(PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesOnHover")->second == 1){
+    PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesHoverEnd")->second = SunCore::instance().SunTime.GetTime();
+  }
+   PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesOnHover")->second = 0;
+
+  }; 
+  
+
+
+  
+  SunCore::instance().SunBrain.NewListener(std::move(LeavePopUpYesHoverOutListener));
+
+
+
+
+    auto LeavePopUpNoHoverListener = std::make_unique<SunListener>();
+  SunEventTrigger LeavePopUpNoHoverListenerTrigger;
+  LeavePopUpNoHoverListenerTrigger.SetMouseTrigger(MouseTriggersType::MouseOn,MouseButtons::LMB,
+  SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpButtonNo")->second.get());
+  LeavePopUpNoHoverListenerTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyDown,KeyCodes::A);
+  LeavePopUpNoHoverListener->UseFn = true;
+  LeavePopUpNoHoverListener->Trigger = LeavePopUpNoHoverListenerTrigger;
+  LeavePopUpNoHoverListener->Id = "LeavePopUpNoHoverListener";
+
+  
+  LeavePopUpNoHoverListener->Fn = [this,PopUpShadowsContainerMaterial](SunEvent& e){
+    SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpTextNo")->second->SetRGBA(1.0,1.0,1.0,1.0);
+   vector2 spot;
+    spot.x = 0.68;
+    spot.y = 0.6;
+     PopUpShadowsContainerMaterial->GetTwoFloatsUniforms().find("hoverspot")->second = spot;
+   if(PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesOnHover")->second == 0){
+    PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesHoverStart")->second = SunCore::instance().SunTime.GetTime();
+    PopUpShadowsContainerMaterial->GetFloatsUniforms().find("EndTime")->second = SunCore::instance().SunTime.GetTime();
+   }
+   PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesOnHover")->second = 1;
+
+  }; 
+
+
+
+  
+  SunCore::instance().SunBrain.NewListener(std::move(LeavePopUpNoHoverListener));
+
+
+
+  auto LeavePopUpNoHoverOutListener = std::make_unique<SunListener>();
+  SunEventTrigger LeavePopUpNoHoverOutListenerTrigger;
+  LeavePopUpNoHoverOutListenerTrigger.SetMouseTrigger(MouseTriggersType::MouseOut,MouseButtons::LMB,
+  SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpButtonNo")->second.get());
+  LeavePopUpNoHoverOutListenerTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyDown,KeyCodes::A);
+  LeavePopUpNoHoverOutListener->UseFn = true;
+  LeavePopUpNoHoverOutListener->Trigger = LeavePopUpNoHoverOutListenerTrigger;
+  LeavePopUpNoHoverOutListener->Id = "LeavePopUpNoHoverOutListener";
+
+  
+  LeavePopUpNoHoverOutListener->Fn = [this,PopUpShadowsContainerMaterial](SunEvent& e){
+    SunCore::instance().SunWorld.GetWorldComponentsMap().find("LeavePopUpTextNo")->second->SetRGBA(1.0,1.0,1.0,1.0);
+    vector2 spot;
+    spot.x = 0.68;
+    spot.y = 0.6;
+     PopUpShadowsContainerMaterial->GetTwoFloatsUniforms().find("hoverspot")->second = spot;
+  if(PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesOnHover")->second == 1){
+    PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesHoverEnd")->second = SunCore::instance().SunTime.GetTime();
+  }
+   PopUpShadowsContainerMaterial->GetFloatsUniforms().find("YesOnHover")->second = 0;
+
+  }; 
+  
+
+
+  
+  SunCore::instance().SunBrain.NewListener(std::move(LeavePopUpNoHoverOutListener));
+
+  
+  
+
+  auto PlayButtonListener = std::make_unique<SunListener>();
+  SunEventTrigger PlayButtonListenerTrigger;
+  PlayButtonListenerTrigger.SetMouseTrigger(MouseTriggersType::PointerDown,MouseButtons::LMB,
+  SunCore::instance().SunWorld.GetWorldComponentsMap().find("PlayButton")->second.get());
+  PlayButtonListener->UseFn = true;
+  PlayButtonListener->Trigger = PlayButtonListenerTrigger;
+  PlayButtonListener->Id = "PlayButtonListener";
+
+  
+ PlayButtonListener->Fn = [this](SunEvent& e){
+   RunScene("GameStartScene");
+ StopThisScene();
+
+
+   
+  }; 
+
+
+  
+  SunCore::instance().SunBrain.NewListener(std::move(PlayButtonListener));
+
+
+
+
+
+ 
 
 
 
@@ -2295,11 +2501,763 @@ Dio->Abilities.push_back(std::make_unique<MoveLeft>());
        
 
 };
+
+
+class GameStartScene : public Scene{
+   std::string SceneID = "GameStartScene"; 
+    void SceneConfigs() override{
+     
+    };
+    void OnLoad() override{
+   SunTextures.NewTexture("FirstGrassTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGrassTile.png");
+      SunTextures.NewTexture("FirstGroundTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGroundTile.png");
+      SunTextures.NewTexture("SecondGroundTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/SecondGroundTile.png");
+         SunTextures.NewTexture("FirstGrassTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGrass.png");
+      SunTextures.NewTexture("FallAltarTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FallAltar.png");
+      SunTextures.NewTexture("FirstGroundWallTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGroundWallTile.png");
+
+         SunTextures.NewTexture("FirstWallTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstWallTile.png");
+        SunTextures.NewTexture("SecondWallTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/SecondWallTile.png");  
+         SunTextures.NewTexture("ThirdWallTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/ThirdWallTile.png");
+           SunTextures.NewTexture("FourWallTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FourWallTile.png");
+            
+             SunTextures.NewTexture("FirstWallsDecorationTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstWallsDecoration.png");
+                SunTextures.NewTexture("SecondGrassTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/SecondGrassTile.png");
+                   SunTextures.NewTexture("ThirdGrassTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/ThirdGrassTile.png");
+
+                           SunTextures.NewTexture("FirstGreatGrassTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGreatGrass.png");
+            SunTextures.NewTexture("FirstShadowTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstShadowTile.png");  
+            
+            SunTextures.NewTexture("FirstMountainTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstMountain.png"); 
+            SunTextures.NewTexture("SecondMountainTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/SecondMountain.png"); 
+            SunTextures.NewTexture("ThirdMountainTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/ThirdMountain.png"); 
+
+                SunTextures.NewTexture("WhiteBlockTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/WhiteBlockTile.png");
+                                SunTextures.NewTexture("FirstSkyTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstSky.png");
+
+                      SunTextures.NewTexture("SecondColinTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/SecondColin.png");
+                        SunTextures.NewTexture("FirstColinTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstColin.png");
+
+                        SunTextures.NewTexture("AvoiedDioTexture","./Assets/Characters/Dio/AvoiedDio.png");
+   
+   
+   
+                                        }
+    void OnInit() override{
+        SunCore::instance().Camera.SetCamPosition(0.0,SunCore::instance().WindowHeight);  
+   SunRender SunRendering;
+  auto& St = SunCore::instance().SunTiledCore;
+
+
+
+  auto WorldLayer = std::make_unique<CollisionLayer>();
+             WorldLayer->Id = "WorldLayer";
+             
+               auto DioHurtLayer = std::make_unique<CollisionLayer>();
+             DioHurtLayer->Id = "DioHurtLayer";
+                WorldLayer->AddCollision(DioHurtLayer.get());
+            DioHurtLayer->AddCollision(WorldLayer.get());
+             SunCore::instance().SunWorld.CollisionsWorld.AddNewCollissionLayer(std::move(WorldLayer));
+              SunCore::instance().SunWorld.CollisionsWorld.AddNewCollissionLayer(std::move(DioHurtLayer));
+
+
+
+
+
+
+
+
+
+
+        const char* GrassVertexShader = R"(
+        #version 330 core
+
+                layout (location = 0) in vec3 aPos;
+                layout (location = 1) in vec2 aUV;
+
+                out vec2 vUV;
+
+                uniform vec2 uSunPos;     
+                uniform vec2 uSunSize;
+                uniform mat4 uSunProjection;
+                    
+                    
+                void main(){
+              
+              gl_Position = uSunProjection * vec4(aPos.xy, 0.0, 1.0);
+              vUV = aUV;
+               
+                }
+        
+        )";
+
+
+     const char* GrassFragmentShader = R"(
+      #version 330 core
+
+      in vec2 vUV;
+
+
+   
+      uniform sampler2D uSunTexture;
+      uniform float uSunTime;
+      out vec4 FragColor;
+      uniform float uWindIntensity;
+      uniform float uWindDirection;
+
+      float hash(vec2 p){
+          return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453);
+      };
+
+      float noise(vec2 p){
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+
+        float a = hash(i);
+        float b = hash(i + vec2(1.0,0.0));
+        float c = hash(i + vec2(0.0,1.0));
+        float d = hash(i + vec2(1.0,1.0));
+
+        vec2 u = f * f * (3.0 - 2.0 * f);
+
+        return mix(a,b,u.x) +
+        (c - a) * u.y * (1.0 -u.x) +
+        (d- b) * u.x * u.y;
+      };
+
+      float fbm(vec2 p)
+{
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+
+    for(int i = 0; i < 5; i++)
+    {
+        value += amplitude * noise(p * frequency);
+        frequency *= 2.0;
+        amplitude *= 0.5;
+    }
+
+    return value;
+}
+
+      void main(){
+       vec2 uv = vUV;
+       float wind_noise = fbm(uv * 2.0 + ((uSunTime * 0.1) * uWindIntensity )) * 0.1;
+       uv.x -= wind_noise;
+       uv.y += wind_noise * 0.8;
+      
+          vec4 tex = texture(uSunTexture,uv);
+
+        
+          FragColor = tex;
+      }
+          
+          )";
+
+
+
+
+
+          GLuint GrassShaderProgram = CreateFullShaderProgram(GrassVertexShader,GrassFragmentShader);
+
+      auto GrassShader = std::make_unique<SunShader>();
+      GrassShader->SetShaderProgram(GrassShaderProgram);
+
+      auto uGrassWindIntensity = std::make_unique<ShaderUniform>();
+      uGrassWindIntensity->Type = UniformType::OneFloat;
+
+      auto uGrassWindDirection = std::make_unique<ShaderUniform>();
+      uGrassWindDirection->Type = UniformType::OneFloat;
+
+      GrassShader->AddUniform("uWindDirection",std::move(uGrassWindDirection));
+      GrassShader->AddUniform("uWindIntensity",std::move(uGrassWindIntensity));
+
+       SunCore::instance().SunShaders.AddShaderToWorld("GrassShader",std::move(GrassShader));
+       SunCore::instance().SunWorld.AddMaterialToWorld("GrassMaterial","GrassShader");
+       auto GrassMaterial = SunCore::instance().SunWorld.GetMaterial("GrassMaterial");
+       GrassMaterial->AddFloatUniform("uWindDirection",1);
+       GrassMaterial->AddFloatUniform("uWindIntensity",1);
+        
+      
+
+       
+
+
+
+
+        const char* SkyVertexShader = R"(
+        #version 330 core
+
+                layout (location = 0) in vec3 aPos;
+                layout (location = 1) in vec2 aUV;
+
+                out vec2 vUV;
+
+                uniform vec2 uSunPos;     
+                uniform vec2 uSunSize;
+                uniform mat4 uSunProjection;
+                    
+                    
+                void main(){
+              
+              gl_Position = uSunProjection * vec4(aPos.xy, 0.0, 1.0);
+              vUV = aUV;
+               
+                }
+        
+        )";
+
+
+     const char* SkyFragmentShader = R"(
+      #version 330 core
+
+      in vec2 vUV;
+
+
+   
+      uniform sampler2D uSunTexture;
+      uniform float uSunTime;
+      out vec4 FragColor;
+
+
+      float hash(vec2 p){
+          return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453);
+      };
+
+      float noise(vec2 p){
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+
+        float a = hash(i);
+        float b = hash(i + vec2(1.0,0.0));
+        float c = hash(i + vec2(0.0,1.0));
+        float d = hash(i + vec2(1.0,1.0));
+
+        vec2 u = f * f * (3.0 - 2.0 * f);
+
+        return mix(a,b,u.x) +
+        (c - a) * u.y * (1.0 -u.x) +
+        (d- b) * u.x * u.y;
+      };
+
+      float fbm(vec2 p)
+{
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+
+    for(int i = 0; i < 5; i++)
+    {
+        value += amplitude * noise(p * frequency);
+        frequency *= 2.0;
+        amplitude *= 0.5;
+    }
+
+    return value;
+}
+
+      void main(){
+       vec2 uv = vUV;
+       float wind_noise = fbm(uv * 30.0 + ((uSunTime * 0.1)));
+       //uv.x -= wind_noise;
+       
+       
+          vec4 tex = texture(uSunTexture,uv);
+          tex.a -= wind_noise;
+          if(tex.a < 0.2){
+          discard;
+          } 
+        
+          FragColor = tex;
+      }
+          
+          )";
+
+
+
+
+
+          GLuint SkyShaderProgram = CreateFullShaderProgram(SkyVertexShader,SkyFragmentShader);
+
+      auto SkyShader = std::make_unique<SunShader>();
+      SkyShader->SetShaderProgram(SkyShaderProgram);
+
+
+       SunCore::instance().SunShaders.AddShaderToWorld("SkyShader",std::move(SkyShader));
+       SunCore::instance().SunWorld.AddMaterialToWorld("SkyMaterial","SkyShader");
+       auto SkyMaterial = SunCore::instance().SunWorld.GetMaterial("SkyMaterial");
+
+        
+      
+
+
+              
+
+          
+
+
+              
+
+          
+
+
+
+
+  St.AddTiledMap("PradariasDoLimiar","./Assets/Maps/Pradarias Do Limiar/PradariasDoLimiar.json");
+
+  auto* PradariasDoLimiar = St.GetTiledMap("PradariasDoLimiar");
+  auto FirstGrassTileClass = std::make_unique<Tile>();
+  FirstGrassTileClass->SetTexture("FirstGrassTileTexture");
+  FirstGrassTileClass->SetMaterial("GrassMaterial");
+
+   auto SecondGrassTileClass = std::make_unique<Tile>();
+  SecondGrassTileClass->SetTexture("SecondGrassTileTexture");
+   SecondGrassTileClass->SetMaterial("GrassMaterial");
+   auto ThirdGrassTileClass = std::make_unique<Tile>();
+  ThirdGrassTileClass->SetTexture("ThirdGrassTileTexture");
+   ThirdGrassTileClass->SetMaterial("GrassMaterial");
+
+   auto FirstSkyClass = std::make_unique<Tile>();
+  FirstSkyClass->SetTexture("FirstSkyTexture");
+    FirstSkyClass->SetMaterial("SkyMaterial");
+
+   
+    auto FirstShadowTileClass = std::make_unique<Tile>();
+  FirstShadowTileClass->SetTexture("FirstShadowTileTexture");
+
+    auto FirstGroundTileClass = std::make_unique<Tile>();
+  FirstGroundTileClass->SetTexture("FirstGroundTileTexture");
+
+   auto WhiteBlockTileClass = std::make_unique<Tile>();
+  WhiteBlockTileClass->SetTexture("WhiteBlockTileTexture");
+
+      auto SecondGroundTileClass = std::make_unique<Tile>();
+  SecondGroundTileClass->SetTexture("SecondGroundTileTexture");
+
+  auto FirstGrassClass = std::make_unique<Tile>();
+  FirstGrassClass->SetTexture("FirstGrassTexture");
+  FirstGrassClass->SetMaterial("GrassMaterial");
+  FirstGrassClass->TileWidth = 200;
+  FirstGrassClass->TileHeight = 200;
+  
+  auto FirstGreatGrassClass = std::make_unique<Tile>();
+  FirstGreatGrassClass->SetTexture("FirstGreatGrassTexture");
+  FirstGreatGrassClass->SetMaterial("GrassMaterial");
+ 
+//
+  auto FallAltarClass = std::make_unique<Tile>();
+  FallAltarClass->SetTexture("FallAltarTexture");
+  FallAltarClass->TileWidth = 88;
+  FallAltarClass->TileHeight = 86;
+
+  
+  auto FirstGroundWallClass = std::make_unique<Tile>();
+  FirstGroundWallClass->SetTexture("FirstGroundWallTileTexture");
+
+  auto FirstWallTileClass = std::make_unique<Tile>();
+  FirstWallTileClass->SetTexture("FirstWallTileTexture");
+
+  
+  auto SecondWallTileClass = std::make_unique<Tile>();
+  SecondWallTileClass->SetTexture("SecondWallTileTexture");
+
+  
+  auto ThirdWallTileClass = std::make_unique<Tile>();
+  ThirdWallTileClass->SetTexture("ThirdWallTileTexture");
+
+  
+  auto ThirdWallTileNoBodyClass = std::make_unique<Tile>();
+  ThirdWallTileNoBodyClass->SetTexture("ThirdWallTileTexture");
+
+  
+  auto FourWallTileClass = std::make_unique<Tile>();
+  FourWallTileClass->SetTexture("FourWallTileTexture");
+  
+   auto FirstMountainClass = std::make_unique<Tile>();
+  FirstMountainClass->SetTexture("FirstMountainTexture");
+     FirstMountainClass->SetMaterial("GrassMaterial");
+  
+      auto ThirdMountainClass = std::make_unique<Tile>();
+  ThirdMountainClass->SetTexture("ThirdMountainTexture");
+     ThirdMountainClass->SetMaterial("GrassMaterial");
+  
+  
+  
+  
+ auto FirstWallsDecorationClass = std::make_unique<Tile>();
+  FirstWallsDecorationClass->SetTexture("FirstWallsDecorationTexture");
+    FirstWallsDecorationClass->TileWidth = 200;
+  FirstWallsDecorationClass->TileHeight = 200;
+
+   auto FirstColinClass = std::make_unique<Tile>();
+  FirstColinClass->SetTexture("FirstColinTexture");
+
+  
+   auto SecondColinClass = std::make_unique<Tile>();
+  SecondColinClass->SetTexture("SecondColinTexture");
+ 
+ 
+
+
+  PradariasDoLimiar->AddTile("FirstGrassTile",std::move(FirstGrassTileClass));
+    PradariasDoLimiar->AddTile("FirstShadowTile",std::move(FirstShadowTileClass));
+    PradariasDoLimiar->AddTile("SecondGrassTile",std::move(SecondGrassTileClass));
+      PradariasDoLimiar->AddTile("ThirdGrassTile",std::move(ThirdGrassTileClass));
+    PradariasDoLimiar->AddTile("FirstGroundTile",std::move(FirstGroundTileClass));
+        PradariasDoLimiar->AddTile("SecondGroundTile",std::move(SecondGroundTileClass));
+         PradariasDoLimiar->AddTile("FirstGrass",std::move(FirstGrassClass));
+               PradariasDoLimiar->AddTile("FirstGreatGrass",std::move(FirstGreatGrassClass));
+
+          PradariasDoLimiar->AddTile("FirstWallTile",std::move(FirstWallTileClass));
+            PradariasDoLimiar->AddTile("SecondWallTile",std::move(SecondWallTileClass));
+              PradariasDoLimiar->AddTile("ThirdWallTile",std::move(ThirdWallTileClass));
+               PradariasDoLimiar->AddTile("ThirdWallTileNoBody",std::move(ThirdWallTileNoBodyClass));
+                PradariasDoLimiar->AddTile("FourWallTile",std::move(FourWallTileClass));
+
+                PradariasDoLimiar->AddTile("FirstGroundWallTile",std::move(FirstGroundWallClass));
+                      PradariasDoLimiar->AddTile("FallAltar",std::move(FallAltarClass));
+ PradariasDoLimiar->AddTile("FirstWallsDecoration",std::move(FirstWallsDecorationClass));
+   PradariasDoLimiar->AddTile("WhiteBlockTile",std::move(WhiteBlockTileClass));
+     PradariasDoLimiar->AddTile("FirstMountain",std::move(FirstMountainClass));
+          PradariasDoLimiar->AddTile("ThirdMountain",std::move(ThirdMountainClass));
+
+                PradariasDoLimiar->AddTile("FirstSky",std::move(FirstSkyClass));
+
+          PradariasDoLimiar->AddTile("FirstColin",std::move(FirstColinClass));
+              PradariasDoLimiar->AddTile("SecondColin",std::move(SecondColinClass));
+          
+    auto BaseSkyLayer = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("BaseSky",std::move(BaseSkyLayer));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","BaseSky",this);
+
+        auto SkyLayer = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("Sky",std::move(SkyLayer));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","Sky",this);
+ 
+
+        auto ColinsLayer = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("Sky",std::move(ColinsLayer));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","Colins",this);
+ 
+
+    auto FirstMountainsLayer = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("FirstMountains",std::move(FirstMountainsLayer));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","FirstMountains",this);
+
+ auto BackWallsLayer = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("BackWalls",std::move(BackWallsLayer));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","BackWalls",this);
+
+    
+    auto BackWallsLayer2 = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("BackWalls2",std::move(BackWallsLayer2));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","BackWalls2",this);
+
+    
+ 
+    
+    auto BackWallsDecorationObjectsLayer0 = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("BackWallsDecorationObjects0",std::move(BackWallsDecorationObjectsLayer0));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","BackWallsDecorationObjects0",this);
+
+
+    auto BackWallsDecorationObjectsLayer2 = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("BackWallsDecorationObjects2",std::move(BackWallsDecorationObjectsLayer2));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","BackWallsDecorationObjects2",this);
+
+    
+    auto BackWallsShadowsLayer = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("BackWallsShadows",std::move(BackWallsShadowsLayer));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","BackWallsShadows",this);
+
+
+
+
+ 
+    auto BackWallsDecorationObjectsLayer = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("BackWallsDecorationObjects",std::move(BackWallsDecorationObjectsLayer));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","BackWallsDecorationObjects",this);
+
+
+  auto GroundLayer = std::make_unique<TileLayer>(); 
+  PradariasDoLimiar->AddLayer("Ground",std::move(GroundLayer));
+  
+
+  St.AddLayerToWorld("PradariasDoLimiar","Ground",this);
+
+  
+     auto WallsLayer = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("Walls",std::move(WallsLayer));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","Walls",this);
+
+    
+    auto WallsShadowsLayer = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("WallsShadows",std::move(WallsShadowsLayer));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","WallsShadows",this);
+
+    auto GrassDecorationLayer = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("GrassDecoration",std::move(GrassDecorationLayer));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","GrassDecoration",this);
+
+      auto FrontDecorationsLayer = std::make_unique<TileLayer>(); 
+    PradariasDoLimiar->AddLayer("FrontDecorations",std::move(FrontDecorationsLayer));
+    
+    St.AddLayerToWorld("PradariasDoLimiar","FrontDecorations",this);
+
+
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+     
+
+     UnitClass PlayerW;
+     PlayerW.Unit = UnitType::Pixel;
+     PlayerW.Value = 128.0f;
+     UnitClass PlayerH;
+     PlayerH.Unit = UnitType::Pixel;
+     PlayerH.Value = 128.0f;
+     UnitClass PlayerX;
+     PlayerX.Unit = UnitType::Pixel;
+     PlayerX.Value = 1.0f;
+     UnitClass PlayerY;
+     PlayerY.Unit = UnitType::Pixel;
+     PlayerY.Value = 0.0f;
+     OriginClass PlayerOriginX;
+     PlayerOriginX = OriginClass::Start;
+     OriginClass PlayerOriginY;
+     PlayerOriginY = OriginClass::Start;
+     std::unique_ptr<Component> DioComponentUnique = 
+    std::make_unique<Component>("DioComponent", PlayerW, PlayerH, PlayerX, PlayerY,PlayerOriginX,PlayerOriginY);
+     DioComponentUnique->SetTexture("AvoiedDioTexture");
+        DioComponentUnique->SetzIndex(42);
+        
+   auto DioTestAnimation = std::make_unique<FrameAnimation>();
+   DioTestAnimation->FrameRate = 6;
+   std::vector<std::string> DioTestVectorFrames;
+   DioTestVectorFrames.push_back("AvoiedDioTexture");
+   DioTestVectorFrames.push_back("DioTesteTexture");
+   DioTestAnimation->SetFrames(DioTestVectorFrames);
+   SunCore::instance().FrameAnimations.CreateFrameAnimation("DioTestAnimation",std::move(DioTestAnimation));
+   DioComponentUnique->SetAnimation("DioTestAnimation");
+     SunRendering.AddSprite(std::move(DioComponentUnique),this);
+    auto* DioComponent = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get();
+    
+ 
+      
+     PlayerAttributesClass DioAttributes;
+     DioAttributes.WalkSpeedX = 1.0f;
+     
+
+  Player* Dio = new Player(DioComponent,DioAttributes);
+     
+     struct MoveLeft : Ability{
+      public:
+    void Activate(Player& Player)override{
+       BodyArcadePhysic Physic;
+     vector2 ActualVelocity = Physic.GetVelocity();
+     vector2 Velocity;
+     Velocity.y = 0.0f;
+     Velocity.x = -500.0f; 
+       Player.PlayerComponent->ApplyForce(Velocity);
+    }
+    
+};
+    
+Dio->Abilities.push_back(std::make_unique<MoveLeft>());
+     
+    
+     auto DioMoveRightListener = std::make_unique<SunListener>(); 
+     DioMoveRightListener->Id = "DioMoveRightListener";
+
+     SunEventTrigger DioMoveRightTrigger;
+      DioMoveRightTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyHeld,KeyCodes::D);
+     DioMoveRightListener->Trigger = DioMoveRightTrigger;
+     DioMoveRightListener->UseFn = true;
+     DioMoveRightListener->Fn = [Dio](SunEvent& e){
+     Dio->UseAbility(1);
+     };
+     
+     SunListenersControl.AddListener(std::move(DioMoveRightListener));
+    
+     struct MoveRight : Ability{
+    void Activate(Player& Player)override{
+       BodyArcadePhysic Physic;
+     vector2 ActualVelocity = Physic.GetVelocity();
+     vector2 Velocity;
+     Velocity.y = 0.0f;
+     Velocity.x = 500.0f; 
+       Player.PlayerComponent->ApplyForce(Velocity);
+    }
+     };
+
+     Dio->Abilities.push_back(std::make_unique<MoveRight>());
+
+     auto DioMoveLeftListener = std::make_unique<SunListener>();
+     DioMoveLeftListener->Id = "DioMoveLeftListener";
+     SunEventTrigger DioMoveLeftTrigger;
+     DioMoveLeftTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyHeld,KeyCodes::A);
+     DioMoveLeftListener->Trigger = DioMoveLeftTrigger;
+     DioMoveLeftListener->UseFn = true;
+     DioMoveLeftListener->Fn = [Dio](SunEvent& e){
+     Dio->UseAbility(0);
+     };
+     SunListenersControl.AddListener(std::move(DioMoveLeftListener));
+
+     
+     struct MoveDown : Ability{
+    void Activate(Player& Player)override{
+     BodyArcadePhysic Physic;
+     vector2 ActualVelocity = Physic.GetVelocity();
+     vector2 Velocity;
+     Velocity.x = 0.0f;
+     Velocity.y = 500.0f; 
+       Player.PlayerComponent->ApplyForce(Velocity);
+    }
+     };
+
+     Dio->Abilities.push_back(std::make_unique<MoveDown>());
+
+     auto DioMoveDownListener = std::make_unique<SunListener>();
+     DioMoveDownListener->Id = "DioMoveDownListener";
+     SunEventTrigger DioMoveDownTrigger;
+      DioMoveDownTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyHeld,KeyCodes::S);
+     DioMoveDownListener->Trigger = DioMoveDownTrigger;
+     DioMoveDownListener->UseFn = true;
+     DioMoveDownListener->Fn = [Dio](SunEvent& e){
+     Dio->UseAbility(2);
+     };
+     SunListenersControl.AddListener(std::move(DioMoveDownListener));
+
+      
+     struct MoveUp : Ability{
+    void Activate(Player& Player)override{
+      BodyArcadePhysic Physic;
+     vector2 ActualVelocity = Physic.GetVelocity();
+     vector2 Velocity;
+     Velocity.x = 0.0f;
+     Velocity.y = -500.0f; 
+       Player.PlayerComponent->ApplyForce(Velocity);
+    }
+     };
+
+     Dio->Abilities.push_back(std::make_unique<MoveUp>());
+
+     auto DioMoveUpListener = std::make_unique<SunListener>();
+     DioMoveUpListener->Id = "DioMoveUpListener";
+     SunEventTrigger DioMoveUpTrigger;
+     DioMoveUpTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyHeld,KeyCodes::W);
+     DioMoveUpListener->Trigger = DioMoveUpTrigger;
+     DioMoveUpListener->UseFn = true;
+     DioMoveUpListener->Fn = [Dio](SunEvent& e){
+     Dio->UseAbility(3);
+     };
+     SunListenersControl.AddListener(std::move(DioMoveUpListener));
+
+   
+     auto DioBody = std::make_unique<SunBodys>();
+     auto DioMainBody = std::make_unique<Body>();
+     DioMainBody->Height = 128.0f;
+     DioMainBody->Width = 128.0f;
+     DioMainBody->OffsetX = 0.0f;
+     DioMainBody->OffsetY = 0.0f;
+     DioMainBody->SetCollisionLayer("DioHurtLayer");
+     auto DioMainBodyPhysic = std::make_unique<BodyArcadePhysic>();
+     DioMainBodyPhysic->SetMass(1.0f);
+     DioMainBody->SetBodyArcadePhysic(std::move(DioMainBodyPhysic));
+
+     auto DioMainBodySunPhysic = std::make_unique<BodySunPhysic>();
+     DioMainBodySunPhysic->SetMass(0.2f);
+     DioMainBody->SetBodySunPhysic(std::move(DioMainBodySunPhysic));
+     
+     DioBody->AddBody("DioMainBody",std::move(DioMainBody));
+     Dio->PlayerComponent->AddBody(std::move(DioBody));
+
+     
+      SunCore::instance().SunWorld.CollisionsWorld.CollisionPhysic = CollisionPhysicTypes::SunPhysic;
+
+    SunCore::instance().Camera.StartFollow(DioComponent->GetId());
+    SunCore::instance().Camera.SetCamLimits(-SunCore::instance().WindowWidth / 2,-SunCore::instance().WindowHeight / 2,20000,20000);
+    SunCore::instance().Camera.SetSmmoth(0.06);
+
+
+    }
+
+    void OnUpdate() override{
+
+    }
+  };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
    
    InfinityAbyssConfig.Window.WindowName = "Infinity Abyss";
-   MenuScene* Menu = new MenuScene();
-   InfinityAbyssConfig.SunScenes.Scenes = {Menu};
-   InfinityAbyssConfig.BodysDebug =true;
+  auto MenuScenePtr = std::make_unique<MenuScene>();
+  SunCore::instance().SunScenes.AddScene("MenuScene",std::move(MenuScenePtr));
+  auto* Menu = SunCore::instance().SunScenes.GetScene("MenuScene");
+MenuScene* Menu1 = new MenuScene();
+  auto GameStartScenePtr = std::make_unique<GameStartScene>();
+  SunCore::instance().SunScenes.AddScene("GameStartScene",std::move(GameStartScenePtr));
+
+   InfinityAbyssConfig.SunScenes.Scenes = "MenuScene";
+   InfinityAbyssConfig.BodysDebug = true;
    
     
     
