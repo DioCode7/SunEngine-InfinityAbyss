@@ -4,6 +4,9 @@
 void Tile::SetTexture(std::string id){
 TileTexture = SunCore::instance().SunRenderCore.GetTexture(id);
 };
+void Tile::SetTextureMask(std::string id){
+TextureMask = SunCore::instance().SunRenderCore.GetTexture(id);
+};
 
 void SunTiled::AddTiledMap(std::string mapid,std::string mappath){
  std::ifstream file(mappath);
@@ -26,7 +29,7 @@ NewMap->SetMapFile(map);
 };
 
 
-void CreateTile(Tile* tile,float worldX,float worldY,Scene* s,std::string gid,float opacity,int zIndex,float width = 0,float height = 0){
+void CreateTile(Tile* tile,float worldX,float worldY,Scene* s,std::string gid,float opacity,int zIndex,int Layer,float width = 0,float height = 0){
 
   UnitClass x;
   x.Unit = UnitType::Pixel;
@@ -55,13 +58,19 @@ auto c = std::make_unique<Component>(cid,
 w,h,x,y,OriginClass::Start,OriginClass::Start);
 c->SetRGBA(1,1,1,opacity);
 c->SetzIndex(zIndex);
+c->SetLayer(zIndex);
 c->SetTexture(tile->GetTexture()->Id);
 
-sr.AddSprite(std::move(c),s);
 
+sr.AddSprite(std::move(c),s);
+if(tile->GetTextureMask()){
+  SunCore::instance().SunWorld.GetWorldComponentsMap().find(cid)->second->SetTextureMask(tile->GetTextureMask()->Id);
+}
 if(tile->GetMaterial() != "SunNull"){
 SunCore::instance().SunWorld.GetWorldComponentsMap().find(cid)->second->AddMaterial(tile->GetMaterial());
+SunCore::instance().SunWorld.GetWorldComponentsMap().find(cid)->second->AddMaterialUniforms(tile->GetMaterialUniforms());
 }
+
 
 
   
@@ -102,7 +111,7 @@ worldY -= offsety;
   
    
 if(Tile){
-  CreateTile(Tile,worldX,worldY,OwnerScene,std::to_string(gid),opacity,zIndex);
+  CreateTile(Tile,worldX,worldY,OwnerScene,std::to_string(gid),opacity,zIndex,zIndex);
 
 
   if(Tile->jsonTile.contains("tiles")){
@@ -184,7 +193,7 @@ for(int i = 0; i < objects.size(); i++){
 
         worldY -= h;
 
-        CreateTile(Tile,worldX,worldY,OwnerScene,std::to_string(gid),opacity,zIndex,w,h);
+        CreateTile(Tile,worldX,worldY,OwnerScene,std::to_string(gid),opacity,zIndex,zIndex,w,h);
     }
 }
 }

@@ -7,3 +7,6 @@ class SunListeners{
     public:
  void AddListener(std::unique_ptr<SunListener> Listener);
 };
+
+
+bool VerifyKeyHeld(KeyCodes k);

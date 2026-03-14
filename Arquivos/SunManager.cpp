@@ -148,6 +148,7 @@ for(const auto& Listener : SunCore::instance().SunBrain.GetListeners()){
 void SunUpdateInput(){
 
     const Uint8* state = SDL_GetKeyboardState(NULL);
+    SunCore::instance().SunBrain.KeysMap = state;
 
     for(const auto& Listener : SunCore::instance().SunBrain.GetListeners()){
 
@@ -167,3 +168,15 @@ void SunUpdateInput(){
 void SunListeners::AddListener(std::unique_ptr<SunListener> Listener){
     SunCore::instance().SunBrain.NewListener(std::move(Listener));
 }
+
+
+bool VerifyKeyHeld(KeyCodes k){
+ auto key = TranslateSDLScan(k);
+
+
+
+ if(SunCore::instance().SunBrain.KeysMap[key]){
+ return true;
+ }
+ return false;
+};

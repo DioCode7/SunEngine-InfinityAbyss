@@ -499,7 +499,7 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   NodeClass* ParentNode = nullptr;
   if(Parent){
     ParentNode = Parent->GetOwner();
-     ComponentClass->SetzIndex(ComponentClass->GetzIndex() + Parent->GetzIndex());
+     ComponentClass->SetLayer(Parent->GetLayer());
   }
   ComponentNode->Parent = ParentNode;
  if(ParentNode){

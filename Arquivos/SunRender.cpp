@@ -171,14 +171,17 @@ void ZIndexProtocol(){
             SunCore::instance().SunEngineConfig->Render.RenderVector.end(),
             [](RenderComponentClass* a, RenderComponentClass* b){
              
-              //  std::cout << "\nzIndex: " << a->Id << "  " << a->OriginalComponent->GetzIndex(); 
-                 //  std::cout << "\nzIndex: " << b->Id << "  " << b->OriginalComponent->GetzIndex(); 
+                if(a->OriginalComponent->GetLayer() == b->OriginalComponent->GetLayer()){
+              
                 if(a->OriginalComponent->GetzIndex() == b->OriginalComponent->GetzIndex()){
                     return a->Y < b->Y;
                 }
         
                 return a->OriginalComponent->GetzIndex()< b->OriginalComponent->GetzIndex();
+            }else{
+                return a->OriginalComponent->GetLayer() < b->OriginalComponent->GetLayer();
             }
+        }
         );
 SunCore::instance().SunWorld.UpdateZIndex(false);
     }

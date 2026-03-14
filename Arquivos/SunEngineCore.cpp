@@ -341,7 +341,7 @@ void Body::CreateBodyComponent(){
   std::unique_ptr<Component> BodyComp = 
     std::make_unique<Component>(this->Id, BodyW, BodyH, BodyX, BodyY,OriginX,OriginY);
    BodyComp->SetBorder(Border);
-   BodyComp->SetzIndex(20000);
+   BodyComp->SetLayer(20000);
    BodyComp->SetRGBA(0.0f,0.0f,0.0,0.0f);
 
    this->BodyComponent = std::move(BodyComp);
@@ -961,9 +961,14 @@ void Material::Apply(RenderComponentClass* rc,float t,float dt){
     break;
    }
    case SunUniformsTypes::uSunTexture:{
-     
+    auto tex = SunCore::instance().SunRenderCore.GetTexture(rc->TextureId)->GPUID;
+     if(rc->OriginalComponent->GetAnimation()){
+    tex = SunCore::instance().SunRenderCore.GetTexture
+    (rc->OriginalComponent->GetAnimation()->GetFrames()[rc->OriginalComponent->GetAnimation()->GetActualFrame()])->GPUID;
+    rc->OriginalComponent->GetAnimation()->UpdateActualFrame();
+     }
     glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D,SunCore::instance().SunRenderCore.GetTexture(rc->TextureId)->GPUID);
+   glBindTexture(GL_TEXTURE_2D,tex);
    glUniform1i(su.second,0);
  
     ti++;
@@ -1022,6 +1027,47 @@ void Material::Apply(RenderComponentClass* rc,float t,float dt){
    };
  
    for(auto& tu : TexturesUniforms){
+   auto u = Shader->GetUniform(tu.first);
+         glActiveTexture(GL_TEXTURE0 + ti);
+   glBindTexture(GL_TEXTURE_2D,tu.second->GPUID);
+   glUniform1i(u->Location,ti);
+   ti++;
+   };
+
+   for(auto& fu : rc->OriginalComponent->GetMaterialUniforms()->GetFloatsUniforms()){
+     
+    auto u = Shader->GetUniform(fu.first);
+    float f = fu.second;
+
+    glUniform1f(u->Location,f);
+
+   };
+    
+
+   for(auto& tfu : rc->OriginalComponent->GetMaterialUniforms()->GetTwoFloatsUniforms()){
+   auto u = Shader->GetUniform(tfu.first);
+    vector2 f = tfu.second;
+
+    glUniform2f(u->Location,f.x,f.y);
+   };
+
+   
+   for(auto& thfu : rc->OriginalComponent->GetMaterialUniforms()->GetThreeFloatsUniforms()){
+   auto u = Shader->GetUniform(thfu.first);
+    vector3 f = thfu.second;
+
+    glUniform3f(u->Location,f.x,f.y,f.z);
+   };
+
+   
+   for(auto& ffu : rc->OriginalComponent->GetMaterialUniforms()->GetFourFloatsUniforms()){
+   auto u = Shader->GetUniform(ffu.first);
+    vector4 f = ffu.second;
+
+    glUniform4f(u->Location,f.x,f.y,f.z,f.xy);
+   };
+ 
+   for(auto& tu : rc->OriginalComponent->GetMaterialUniforms()->GetTexturesUniforms()){
    auto u = Shader->GetUniform(tu.first);
          glActiveTexture(GL_TEXTURE0 + ti);
    glBindTexture(GL_TEXTURE_2D,tu.second->GPUID);
@@ -1346,7 +1392,7 @@ if(FollowedComponent != "SunNull"){
     if(x + Width / 2 > CamLimit.z){
       x = CamLimit.z - Width / 2; 
     }
-    if(y - Height / 2 < CamLimit.xy){
+    if(y - Height / 2 > CamLimit.xy){
       y = CamLimit.xy + Height/ 2;
     }
     if(y + Height / 2> CamLimit.y){

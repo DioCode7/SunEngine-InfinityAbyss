@@ -789,6 +789,60 @@ Alpha,
 Add,
 };
 
+class MaterialUniforms{
+private:
+  std::unordered_map<std::string,float> FloatUniforms;
+std::unordered_map<std::string,vector2> TwoFloatsUniforms;
+std::unordered_map<std::string,vector3> ThreeFloatUniforms;
+std::unordered_map<std::string,vector4> FourFloatUniforms;
+std::unordered_map<std::string,Texture*> TexturesUniforms;
+public:
+ void AddTextureUniform(std::string Id,std::string TextureId);
+ void AddFloatUniform(std::string Id,float f){
+  FloatUniforms.emplace(Id,f);
+ };
+ void AddTwoFloatsUniform(std::string Id,float x,float y){
+  vector2 v2;
+  v2.x = x;
+  v2.y = y;
+  TwoFloatsUniforms.emplace(Id,v2);
+ };
+  void AddThreeFloatsUniform(std::string Id,float x,float y,float z){
+  vector3 v3;
+  v3.x = x;
+  v3.y = y;
+  v3.z = z;
+  ThreeFloatUniforms.emplace(Id,v3);
+ };
+   void AddFourFloatsUniform(std::string Id,float x,float y,float z,float xy){
+  vector4 v4;
+  v4.x = x;
+  v4.y = y;
+  v4.z = z;
+  v4.xy = xy;
+  FourFloatUniforms.emplace(Id,v4);
+ };
+ const std::unordered_map<std::string,Texture*>& GetTexturesUniforms(){
+   return TexturesUniforms;
+ };
+ const std::unordered_map<std::string,vector4>& GetFourFloatsUniforms(){
+   return FourFloatUniforms;
+ };
+  const std::unordered_map<std::string,vector3>& GetThreeFloatsUniforms(){
+   return ThreeFloatUniforms;
+ };
+  std::unordered_map<std::string,vector2>& GetTwoFloatsUniforms(){
+   return TwoFloatsUniforms;
+ };
+   std::unordered_map<std::string,float>& GetFloatsUniforms(){
+   return FloatUniforms;
+ };
+
+
+
+
+};
+
 
 class Material{
   private:
@@ -904,6 +958,7 @@ class SunBrain{
   private:
   std::unordered_map<std::string,std::unique_ptr<SunListener>> Listeners;
 public:
+ const Uint8* KeysMap = nullptr;
 void NewListener(std::unique_ptr<SunListener> Listener){
   auto Id = Listener.get()->Id;
   if(Listener->Trigger.GetKeyBoardTriggerType() != KeyboardTriggersType::None && Listener->Trigger.GetKeyboardKeyCode() != KeyCodes::None){
@@ -1268,6 +1323,8 @@ private:
 Texture* TileTexture = nullptr;
 std::string Name;
 std::string TileMaterial = "SunNull";
+MaterialUniforms Uniforms;
+Texture* TextureMask = nullptr;
 public:
 int tilecount;
  int lastgid;
@@ -1286,10 +1343,22 @@ void SetTexture(std::string id);
 Texture* GetTexture(){
   return TileTexture;
 }
+void SetTextureMask(std::string id);
+Texture* GetTextureMask(){
+  return TextureMask;
+}
 void SetMaterial(std::string MaterialId);
 
 std::string GetMaterial(){
   return TileMaterial;
+}
+
+void SetMaterialUniforms(MaterialUniforms u){
+  Uniforms = u;
+};
+
+MaterialUniforms GetMaterialUniforms(){
+  return Uniforms;
 }
 };
 
@@ -1460,6 +1529,7 @@ GLuint AnimationTexture;
 
   
   public:
+  std::string Id = "SunNull";
   float FrameTimer = 0.0f;
 int FrameRate = 60;
 int Repeat = 1;
@@ -1500,6 +1570,7 @@ FrameAnimation* GetFrameAnimation(std::string a){
 
 void CreateFrameAnimation(std::string id,std::unique_ptr<FrameAnimation> fra){
  //MakeAnimationAtlas(id,fra.get());
+ fra->Id = id;
 FrameAnimations.emplace(id,std::move(fra));
 }
 
@@ -1730,7 +1801,7 @@ if (Owner && Owner->Parent) {
     bool WhileFlag = true;
     ActualNode = Owner.get();
   while(WhileFlag){
-  RelativeX += ActualNode->ComponentClass->PosX.RenderValue;
+  RelativeX += ActualNode->ComponentClass->PosX.Value;
   if(!ActualNode->Parent){
   WhileFlag = false;
   }else{
@@ -1775,7 +1846,7 @@ TransformOriginX();
     bool WhileFlag = true;
     ActualNode = Owner.get();
   while(WhileFlag){
-  RelativeY += ActualNode->ComponentClass->PosY.RenderValue;
+  RelativeY += ActualNode->ComponentClass->PosY.Value;
   if(!ActualNode->Parent){
   WhileFlag = false;
   }else{
@@ -1849,11 +1920,7 @@ TransformOriginX();
   LastDisplay = RenderDisplay;
  }
 
- if(Owner){
- for(auto& c : Owner->Childrens){
-  c->ComponentClass->Dirty = true;
- }
- };
+ 
 
  if(Body){
   ResolveBody();
@@ -1861,7 +1928,13 @@ TransformOriginX();
 
  UpdateRC();
  Dirty = false;
-
+if(Owner){
+ for(auto& c : Owner->Childrens){
+  std::cout<< "\nResolve Child:  "<<c->ComponentClass->GetId()<<"  "<<c->ComponentClass->GetX().RenderValue;
+  c->ComponentClass->SetDirty(true);
+  
+ }
+ };
 };
 
 void TransformOriginX(){
@@ -1944,8 +2017,8 @@ float ay = PosY.ValueResolved;
    InnerBody.second->WorldY = BodyY.Value;
     
    if(BodyComponent){
-    BodyComponent->SetX(BodyX);
-    BodyComponent->SetY(BodyY);
+    BodyComponent->SetDirty(true);
+    
 
     BodyComponent->ResolveComponent();
 
@@ -2176,6 +2249,14 @@ UpdateRC();
    void AddMaterial(std::string Id){
      RenderComponent->Material = SunCore::instance().SunWorld.GetMaterial(Id);
    };
+
+   MaterialUniforms* GetMaterialUniforms(){
+    return &Uniforms;
+   }
+
+   void AddMaterialUniforms(MaterialUniforms mu){
+  Uniforms = mu;
+   };
    
    ComponentType GetComponentType()const{
     return Type;
@@ -2313,6 +2394,16 @@ SunCore::instance().SunWorld.UpdateZIndex(true);
 int GetzIndex(){
   return zIndex;
 }
+
+void SetLayer(int z){
+Layer = z;
+Dirty = true;
+SunCore::instance().SunWorld.UpdateZIndex(true);
+}
+
+int GetLayer(){
+  return Layer;
+}
 void SetDirty( bool b){
 Dirty = b;
 }
@@ -2359,6 +2450,8 @@ Animation = SunCore::instance().FrameAnimations.GetFrameAnimation(aid);
    int zIndex = 1;
    bool PointerEvents = true;
    FrameAnimation* Animation = nullptr;
+   MaterialUniforms Uniforms;
+   int Layer = 0;
   
    
 

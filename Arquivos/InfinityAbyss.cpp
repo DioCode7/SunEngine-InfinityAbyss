@@ -31,9 +31,15 @@
     
     };
 
+    enum class PlayerStates{
+    WalkRight,
+    WalkLeft,
+    Idle
+    };
     
     class Player{
  public:
+ PlayerStates State = PlayerStates::Idle;
  Player(Component* PlayerComp,PlayerAttributesClass Atribu):PlayerComponent(PlayerComp),Attributes(Atribu){}
  Component* PlayerComponent;
  PlayerAttributesClass Attributes;
@@ -44,6 +50,43 @@
   }
  };
 
+ void Update(){
+  switch(State){
+    case PlayerStates::Idle:{
+    if(PlayerComponent->GetAnimation()->Id != "DioIdleAnimation"){
+    auto* DioComponent = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get();
+     auto* DioHair = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioHair")->second.get();
+      auto* DioHead = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioHead")->second.get();
+       auto* DioFallMark = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioFallMark")->second.get();
+        auto* DioPants = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioPants")->second.get();
+         auto* DioPantsBands = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioPantsBands")->second.get();
+          auto* DioBoots = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioBoots")->second.get();
+           auto* DioFrontBody = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioFrontBody")->second.get();
+            auto* DioNamelessSword = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioNamelessSword")->second.get();
+             auto* DioTShirt = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioTShirt")->second.get();
+   DioComponent->SetAnimation("DioIdleAnimation");
+        DioHair->SetAnimation("DioIdleHairAnimation");
+   DioHead->SetAnimation("DioIdleHeadAnimation");
+   DioBoots->SetAnimation("DioIdleBootsAnimation");
+DioFallMark->SetAnimation("DioIdleFallMarkAnimation");
+DioPants->SetAnimation("DioIdlePantsAnimation");
+DioPantsBands->SetAnimation("DioIdlePantsBandsAnimation");
+DioNamelessSword->SetAnimation("DioIdleNamelessSwordAnimation");
+DioFrontBody->SetAnimation("DioIdleFrontBodyAnimation");     
+DioTShirt->SetAnimation("DioIdleTShirtAnimation");
+    }
+    break;
+    }
+    case PlayerStates::WalkLeft:{
+      BodyArcadePhysic Physic;
+     vector2 ActualVelocity = Physic.GetVelocity();
+     vector2 Velocity;
+     Velocity.y = 0.0f;
+     Velocity.x = -500.0f; 
+       PlayerComponent->ApplyForce(Velocity);
+    };
+  }
+ };
 
 
  
@@ -53,7 +96,7 @@
 };
 
 
-
+ Player* Dio;
 
 
 
@@ -2510,9 +2553,11 @@ class GameStartScene : public Scene{
     };
     void OnLoad() override{
    SunTextures.NewTexture("FirstGrassTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGrassTile.png");
+    SunTextures.NewTexture("FirstGrassTileMask","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGrassTileMask.png");
       SunTextures.NewTexture("FirstGroundTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGroundTile.png");
       SunTextures.NewTexture("SecondGroundTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/SecondGroundTile.png");
          SunTextures.NewTexture("FirstGrassTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGrass.png");
+              SunTextures.NewTexture("FirstGrassMask","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGrassMask.png");
       SunTextures.NewTexture("FallAltarTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FallAltar.png");
       SunTextures.NewTexture("FirstGroundWallTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGroundWallTile.png");
 
@@ -2524,22 +2569,66 @@ class GameStartScene : public Scene{
              SunTextures.NewTexture("FirstWallsDecorationTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstWallsDecoration.png");
                 SunTextures.NewTexture("SecondGrassTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/SecondGrassTile.png");
                    SunTextures.NewTexture("ThirdGrassTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/ThirdGrassTile.png");
+                           SunTextures.NewTexture("SecondGrassTileMask","./Assets/Maps/Pradarias Do Limiar/Tiles/SecondGrassTileMask.png");
+                   SunTextures.NewTexture("ThirdGrassTileMask","./Assets/Maps/Pradarias Do Limiar/Tiles/ThirdGrassTileMask.png");
 
                            SunTextures.NewTexture("FirstGreatGrassTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGreatGrass.png");
+                     SunTextures.NewTexture("FirstGreatGrassMask","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstGreatGrassMask.png");
             SunTextures.NewTexture("FirstShadowTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstShadowTile.png");  
             
             SunTextures.NewTexture("FirstMountainTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstMountain.png"); 
             SunTextures.NewTexture("SecondMountainTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/SecondMountain.png"); 
             SunTextures.NewTexture("ThirdMountainTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/ThirdMountain.png"); 
 
+             SunTextures.NewTexture("FirstMountainMask","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstMountainMask.png"); 
+         
+       
+
                 SunTextures.NewTexture("WhiteBlockTileTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/WhiteBlockTile.png");
                                 SunTextures.NewTexture("FirstSkyTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstSky.png");
 
                       SunTextures.NewTexture("SecondColinTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/SecondColin.png");
                         SunTextures.NewTexture("FirstColinTexture","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstColin.png");
-
-                        SunTextures.NewTexture("AvoiedDioTexture","./Assets/Characters/Dio/AvoiedDio.png");
-   
+        SunTextures.NewTexture("SecondColinMask","./Assets/Maps/Pradarias Do Limiar/Tiles/SecondColinMask.png");
+                        SunTextures.NewTexture("FirstColinMask","./Assets/Maps/Pradarias Do Limiar/Tiles/FirstColinMask.png");
+                        SunTextures.NewTexture("AvoiedDioTexture1","./Assets/Characters/Dio/AvoiedDio0000.png");
+                         SunTextures.NewTexture("AvoiedDioTexture2","./Assets/Characters/Dio/AvoiedDio0001.png");
+                           SunTextures.NewTexture("AvoiedDioWindMask1","./Assets/Characters/Dio/AvoiedDio0000WindTexture.png");
+                            SunTextures.NewTexture("AvoiedDioWindMask1Bands","./Assets/Characters/Dio/AvoiedDio0000WindTextureBands.png");
+                             SunTextures.NewTexture("AvoiedDioWindMask1NamelessSword","./Assets/Characters/Dio/AvoiedDioNamelessSwordMask0000.png");
+           SunTextures.NewTexture("AvoiedDioWindMask2NamelessSword","./Assets/Characters/Dio/AvoiedDioNamelessSwordMask0001.png");
+           SunTextures.NewTexture("AvoiedDioWindMask3NamelessSword","./Assets/Characters/Dio/AvoiedDioNamelessSwordMask0002.png");
+                         
+              SunTextures.NewTexture("AvoiedDioHairTexture1","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Hair0000.png"); 
+              SunTextures.NewTexture("AvoiedDioHairTexture2","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Hair0001.png");
+                 SunTextures.NewTexture("AvoiedDioHairTexture3","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Hair0002.png");
+              SunTextures.NewTexture("AvoiedDioHeadTexture1","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Head0000.png"); 
+              SunTextures.NewTexture("AvoiedDioHeadTexture2","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Head0001.png");  
+              SunTextures.NewTexture("AvoiedDioHeadTexture3","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Head0002.png");  
+              SunTextures.NewTexture("AvoiedDioBootsTexture1","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Boots0000.png"); 
+              SunTextures.NewTexture("AvoiedDioBootsTexture2","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Boots0001.png");
+               SunTextures.NewTexture("AvoiedDioBootsTexture3","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Boots0002.png");         
+              SunTextures.NewTexture("AvoiedDioPantsBandsTexture1","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - PantsBands0000.png"); 
+              SunTextures.NewTexture("AvoiedDioPantsBandsTexture2","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - PantsBands0001.png");
+              SunTextures.NewTexture("AvoiedDioPantsBandsTexture3","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - PantsBands0002.png");    
+              SunTextures.NewTexture("AvoiedDioPantsTexture1","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Pants0000.png"); 
+              SunTextures.NewTexture("AvoiedDioPantsTexture2","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Pants0001.png"); 
+               SunTextures.NewTexture("AvoiedDioPantsTexture3","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Pants0002.png");     
+              SunTextures.NewTexture("AvoiedDioNamelessSwordTexture1","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Nameless Sword0000.png"); 
+              SunTextures.NewTexture("AvoiedDioNamelessSwordTexture2","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Nameless Sword0001.png");  
+              SunTextures.NewTexture("AvoiedDioNamelessSwordTexture3","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Nameless Sword0002.png"); 
+              SunTextures.NewTexture("AvoiedDioBodyTexture1","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Body0000.png"); 
+              SunTextures.NewTexture("AvoiedDioBodyTexture2","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Body0001.png"); 
+               SunTextures.NewTexture("AvoiedDioBodyTexture3","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - Body0002.png"); 
+              SunTextures.NewTexture("AvoiedDioBodyFrontTexture1","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - FrontBody0000.png"); 
+              SunTextures.NewTexture("AvoiedDioBodyFrontTexture2","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - FrontBody0001.png");
+              SunTextures.NewTexture("AvoiedDioBodyFrontTexture3","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - FrontBody0002.png");  
+              SunTextures.NewTexture("AvoiedDioTShirtTexture1","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - TShirt0000.png"); 
+              SunTextures.NewTexture("AvoiedDioTShirtTexture2","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - TShirt0001.png"); 
+                 SunTextures.NewTexture("AvoiedDioTShirtTexture3","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - TShirt0002.png"); 
+              SunTextures.NewTexture("AvoiedDioFallMarkTexture1","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - FallMark0000.png"); 
+              SunTextures.NewTexture("AvoiedDioFallMarkTexture2","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - FallMark0001.png"); 
+     SunTextures.NewTexture("AvoiedDioFallMarkTexture3","./Assets/Characters/Dio/AvoiedDio/AvoiedDio - FallMark0002.png"); 
    
    
                                         }
@@ -2569,7 +2658,7 @@ class GameStartScene : public Scene{
 
 
 
-        const char* GrassVertexShader = R"(
+        const char* WindVertexShader = R"(
         #version 330 core
 
                 layout (location = 0) in vec3 aPos;
@@ -2592,7 +2681,7 @@ class GameStartScene : public Scene{
         )";
 
 
-     const char* GrassFragmentShader = R"(
+     const char* WindFragmentShader = R"(
       #version 330 core
 
       in vec2 vUV;
@@ -2600,10 +2689,17 @@ class GameStartScene : public Scene{
 
    
       uniform sampler2D uSunTexture;
+      uniform sampler2D uSunTextureMask;
       uniform float uSunTime;
       out vec4 FragColor;
+      uniform float uWindYFactor;
+      uniform float uWindXFactor;
       uniform float uWindIntensity;
       uniform float uWindDirection;
+      uniform float uWindForce;
+      uniform float uWindSize;
+      uniform float uWindPulseFactor;
+      uniform float uWindThreeshold;
 
       float hash(vec2 p){
           return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453);
@@ -2643,10 +2739,18 @@ class GameStartScene : public Scene{
 
       void main(){
        vec2 uv = vUV;
-       float wind_noise = fbm(uv * 2.0 + ((uSunTime * 0.1) * uWindIntensity )) * 0.1;
-       uv.x -= wind_noise;
-       uv.y += wind_noise * 0.8;
+       vec4 mask = texture(uSunTextureMask,uv);
+       float wind_noise = fbm(vUV * uWindSize + ((uSunTime * 0.1) * uWindIntensity )) * uWindForce;
+          float wind_noiseY = fbm(vUV * (uWindSize + vec2(15.0,0.0)) + ((uSunTime * 0.1) * uWindIntensity )) * uWindForce;
+      float influence = mask.r;
+
+     float wind_pulse = fbm(uv * uWindSize + ((uSunTime * 0.9) * uWindIntensity));
+     wind_pulse = smoothstep(uWindThreeshold,1.0,wind_pulse);
       
+       uv.y += ((wind_noiseY * influence) * uWindYFactor) * (wind_pulse * uWindPulseFactor + 0.01);
+        uv.x += ((wind_noise * influence) * uWindXFactor) * (wind_pulse * uWindPulseFactor + 0.01);
+       
+      uv.y = clamp(uv.y, 0.0, 1.0);
           vec4 tex = texture(uSunTexture,uv);
 
         
@@ -2659,29 +2763,122 @@ class GameStartScene : public Scene{
 
 
 
-          GLuint GrassShaderProgram = CreateFullShaderProgram(GrassVertexShader,GrassFragmentShader);
+          GLuint WindShaderProgram = CreateFullShaderProgram(WindVertexShader,WindFragmentShader);
 
-      auto GrassShader = std::make_unique<SunShader>();
-      GrassShader->SetShaderProgram(GrassShaderProgram);
+      auto WindShader = std::make_unique<SunShader>();
+      WindShader->SetShaderProgram(WindShaderProgram);
 
-      auto uGrassWindIntensity = std::make_unique<ShaderUniform>();
-      uGrassWindIntensity->Type = UniformType::OneFloat;
+      auto uWindIntensity = std::make_unique<ShaderUniform>();
+      uWindIntensity->Type = UniformType::OneFloat;
 
-      auto uGrassWindDirection = std::make_unique<ShaderUniform>();
-      uGrassWindDirection->Type = UniformType::OneFloat;
+            auto uWindXFactor = std::make_unique<ShaderUniform>();
+      uWindXFactor->Type = UniformType::OneFloat;
 
-      GrassShader->AddUniform("uWindDirection",std::move(uGrassWindDirection));
-      GrassShader->AddUniform("uWindIntensity",std::move(uGrassWindIntensity));
+            auto uWindYFactor = std::make_unique<ShaderUniform>();
+      uWindYFactor->Type = UniformType::OneFloat;
 
-       SunCore::instance().SunShaders.AddShaderToWorld("GrassShader",std::move(GrassShader));
-       SunCore::instance().SunWorld.AddMaterialToWorld("GrassMaterial","GrassShader");
-       auto GrassMaterial = SunCore::instance().SunWorld.GetMaterial("GrassMaterial");
-       GrassMaterial->AddFloatUniform("uWindDirection",1);
-       GrassMaterial->AddFloatUniform("uWindIntensity",1);
+         auto uWindSize = std::make_unique<ShaderUniform>();
+      uWindSize->Type = UniformType::OneFloat;
+
+               auto uWindForce = std::make_unique<ShaderUniform>();
+      uWindForce->Type = UniformType::OneFloat;
+
+        auto uWindPulseFactor = std::make_unique<ShaderUniform>();
+      uWindPulseFactor->Type = UniformType::OneFloat;
+
+         auto uWindThreeshold = std::make_unique<ShaderUniform>();
+      uWindThreeshold->Type = UniformType::OneFloat;
+
+
+      auto uWindDirection = std::make_unique<ShaderUniform>();
+      uWindDirection->Type = UniformType::OneFloat;
+
+      WindShader->AddUniform("uWindDirection",std::move(uWindDirection));
+      WindShader->AddUniform("uWindIntensity",std::move(uWindIntensity));
+            WindShader->AddUniform("uWindSize",std::move(uWindSize));
+             WindShader->AddUniform("uWindForce",std::move(uWindForce));
+                WindShader->AddUniform("uWindXFactor",std::move(uWindXFactor));
+                    WindShader->AddUniform("uWindYFactor",std::move(uWindYFactor));
+           WindShader->AddUniform("uWindPulseFactor",std::move(uWindPulseFactor));
+            WindShader->AddUniform("uWindThreeshold",std::move(uWindThreeshold));
+
+       SunCore::instance().SunShaders.AddShaderToWorld("WindShader",std::move(WindShader));
+       SunCore::instance().SunWorld.AddMaterialToWorld("WindMaterial","WindShader");
+       auto WindMaterial = SunCore::instance().SunWorld.GetMaterial("WindMaterial");
+       WindMaterial->AddFloatUniform("uWindDirection",1);
+       WindMaterial->AddFloatUniform("uWindIntensity",1);
+        WindMaterial->AddFloatUniform("uWindSize",2.0);
+           WindMaterial->AddFloatUniform("uWindForce",0.1);
+                 WindMaterial->AddFloatUniform("uWindYFactor",1.0);
+                 WindMaterial->AddFloatUniform("uWindXFactor",1.0);
+              WindMaterial->AddFloatUniform("uWindPulseFactor",0.4);
+                WindMaterial->AddFloatUniform("uWindThreeshold",0.4);
         
-      
+         MaterialUniforms StrongWindGrass;
+       StrongWindGrass.AddFloatUniform("uWindIntensity",2.5);
 
+          MaterialUniforms DistantWeakWindGrass;
+        DistantWeakWindGrass.AddFloatUniform("uWindIntensity",1.0);
+          DistantWeakWindGrass.AddFloatUniform("uWindSize",10.0);
+
+             MaterialUniforms DistantGreatWeakWindGrass;
+       DistantGreatWeakWindGrass.AddFloatUniform("uWindIntensity",0.6);
+         DistantGreatWeakWindGrass.AddFloatUniform("uWindSize",5.0);
+         DistantGreatWeakWindGrass.AddFloatUniform("uWindXFactor",0.0);
        
+          MaterialUniforms MediumWindGrass;
+       MediumWindGrass.AddFloatUniform("uWindIntensity",1.5);
+         MediumWindGrass.AddFloatUniform("uWindSize",10);
+       
+          MaterialUniforms DioWindUniforms;
+       DioWindUniforms.AddFloatUniform("uWindIntensity",3);
+         DioWindUniforms.AddFloatUniform("uWindSize",0.2);
+          DioWindUniforms.AddFloatUniform("uWindForce",0.02);
+               DioWindUniforms.AddFloatUniform("uWindXFactor",5.0);
+
+                     MaterialUniforms DioHairWindUniforms;
+       DioHairWindUniforms.AddFloatUniform("uWindIntensity",0.6);
+         DioHairWindUniforms.AddFloatUniform("uWindSize",20.0);
+          DioHairWindUniforms.AddFloatUniform("uWindForce",0.1);
+                    DioHairWindUniforms.AddFloatUniform("uWindYFactor",-1.0);
+               DioHairWindUniforms.AddFloatUniform("uWindXFactor",-1.0);
+                DioHairWindUniforms.AddFloatUniform("uWindPulseFactor",1.0);
+
+                        MaterialUniforms DioTShirtWindUniforms;
+        DioTShirtWindUniforms.AddFloatUniform("uWindIntensity",0.5);
+        DioTShirtWindUniforms.AddFloatUniform("uWindSize",5.0);
+         DioTShirtWindUniforms.AddFloatUniform("uWindForce",0.08);
+                   DioTShirtWindUniforms.AddFloatUniform("uWindYFactor",1.0);
+              DioTShirtWindUniforms.AddFloatUniform("uWindXFactor",1.0);
+              DioTShirtWindUniforms.AddFloatUniform("uWindPulseFactor",1.0);
+
+                       MaterialUniforms DioPantsWindUniforms;
+        DioPantsWindUniforms.AddFloatUniform("uWindIntensity",0.5);
+       DioPantsWindUniforms.AddFloatUniform("uWindSize",5.0);
+        DioPantsWindUniforms.AddFloatUniform("uWindForce",0.07);
+                   DioPantsWindUniforms.AddFloatUniform("uWindYFactor",1.0);
+             DioPantsWindUniforms.AddFloatUniform("uWindXFactor",0.5);
+              DioPantsWindUniforms.AddFloatUniform("uWindPulseFactor",1.0);
+
+               MaterialUniforms DioNamelessSwordWindUniforms;
+         DioNamelessSwordWindUniforms.AddFloatUniform("uWindIntensity",0.7);
+       DioNamelessSwordWindUniforms.AddFloatUniform("uWindSize",5.0);
+      DioNamelessSwordWindUniforms.AddFloatUniform("uWindForce",0.2);
+                   DioNamelessSwordWindUniforms.AddFloatUniform("uWindYFactor",1.0);
+              DioNamelessSwordWindUniforms.AddFloatUniform("uWindXFactor",1.0);
+              DioNamelessSwordWindUniforms.AddFloatUniform("uWindPulseFactor",2.0);
+    DioNamelessSwordWindUniforms.AddFloatUniform("uWindThreeshold",0.3);
+
+                MaterialUniforms DioBandsWindUniforms;
+        DioBandsWindUniforms.AddFloatUniform("uWindIntensity",0.7);
+      DioBandsWindUniforms.AddFloatUniform("uWindSize",10.0);
+      DioBandsWindUniforms.AddFloatUniform("uWindForce",0.1);
+                   DioBandsWindUniforms.AddFloatUniform("uWindYFactor",0.5);
+            DioBandsWindUniforms.AddFloatUniform("uWindXFactor",1.0);
+              DioBandsWindUniforms.AddFloatUniform("uWindPulseFactor",1.0);
+                 DioBandsWindUniforms.AddFloatUniform("uWindThreeshold",0.0);
+
+
 
 
 
@@ -2791,6 +2988,102 @@ class GameStartScene : public Scene{
         
       
 
+        const char* FallMarkVertexShader = R"(
+        #version 330 core
+
+                layout (location = 0) in vec3 aPos;
+                layout (location = 1) in vec2 aUV;
+
+                out vec2 vUV;
+
+                uniform vec2 uSunPos;     
+                uniform vec2 uSunSize;
+                uniform mat4 uSunProjection;
+                    
+                    
+                void main(){
+              
+              gl_Position = uSunProjection * vec4(aPos.xy, 0.0, 1.0);
+              vUV = aUV;
+               
+                }
+        
+        )";
+
+
+     const char*  FallMarkFragmentShader = R"(
+      #version 330 core
+
+      in vec2 vUV;
+
+
+   
+      uniform sampler2D uSunTexture;
+      uniform float uSunTime;
+      out vec4 FragColor;
+
+
+      float hash(vec2 p){
+          return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453);
+      };
+
+      float noise(vec2 p){
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+
+        float a = hash(i);
+        float b = hash(i + vec2(1.0,0.0));
+        float c = hash(i + vec2(0.0,1.0));
+        float d = hash(i + vec2(1.0,1.0));
+
+        vec2 u = f * f * (3.0 - 2.0 * f);
+
+        return mix(a,b,u.x) +
+        (c - a) * u.y * (1.0 -u.x) +
+        (d- b) * u.x * u.y;
+      };
+
+      float fbm(vec2 p)
+{
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+
+    for(int i = 0; i < 5; i++)
+    {
+        value += amplitude * noise(p * frequency);
+        frequency *= 2.0;
+        amplitude *= 0.5;
+    }
+
+    return value;
+}
+
+      void main(){
+       vec2 uv = vUV;
+          vec4 tex = texture(uSunTexture,uv);
+          FragColor = tex;
+      }
+          
+          )";
+
+
+
+
+
+          GLuint  FallMarkShaderProgram = CreateFullShaderProgram(FallMarkVertexShader,FallMarkFragmentShader);
+
+      auto  FallMarkShader = std::make_unique<SunShader>();
+       FallMarkShader->SetShaderProgram(FallMarkShaderProgram);
+      
+
+       SunCore::instance().SunShaders.AddShaderToWorld("FallMarkShader",std::move( FallMarkShader));
+       SunCore::instance().SunWorld.AddMaterialToWorld("FallMarkMaterial","FallMarkShader");
+       auto FallMarkMaterial = SunCore::instance().SunWorld.GetMaterial("FallMarkMaterial");
+
+        
+      
+
 
               
 
@@ -2809,14 +3102,18 @@ class GameStartScene : public Scene{
   auto* PradariasDoLimiar = St.GetTiledMap("PradariasDoLimiar");
   auto FirstGrassTileClass = std::make_unique<Tile>();
   FirstGrassTileClass->SetTexture("FirstGrassTileTexture");
-  FirstGrassTileClass->SetMaterial("GrassMaterial");
+  FirstGrassTileClass->SetMaterial("WindMaterial");
+    FirstGrassTileClass->SetTextureMask("FirstGrassTileMask");
+    FirstGrassTileClass->SetMaterialUniforms(MediumWindGrass);
 
    auto SecondGrassTileClass = std::make_unique<Tile>();
   SecondGrassTileClass->SetTexture("SecondGrassTileTexture");
-   SecondGrassTileClass->SetMaterial("GrassMaterial");
+   SecondGrassTileClass->SetMaterial("WindMaterial");
+   SecondGrassTileClass->SetTextureMask("SecondGrassTileMask");
    auto ThirdGrassTileClass = std::make_unique<Tile>();
   ThirdGrassTileClass->SetTexture("ThirdGrassTileTexture");
-   ThirdGrassTileClass->SetMaterial("GrassMaterial");
+   ThirdGrassTileClass->SetMaterial("WindMaterial");
+     ThirdGrassTileClass->SetTextureMask("ThirdGrassTileMask");
 
    auto FirstSkyClass = std::make_unique<Tile>();
   FirstSkyClass->SetTexture("FirstSkyTexture");
@@ -2837,13 +3134,17 @@ class GameStartScene : public Scene{
 
   auto FirstGrassClass = std::make_unique<Tile>();
   FirstGrassClass->SetTexture("FirstGrassTexture");
-  FirstGrassClass->SetMaterial("GrassMaterial");
+  FirstGrassClass->SetMaterial("WindMaterial");
+  FirstGrassClass->SetTextureMask("FirstGrassMask");
+
   FirstGrassClass->TileWidth = 200;
   FirstGrassClass->TileHeight = 200;
   
   auto FirstGreatGrassClass = std::make_unique<Tile>();
   FirstGreatGrassClass->SetTexture("FirstGreatGrassTexture");
-  FirstGreatGrassClass->SetMaterial("GrassMaterial");
+  FirstGreatGrassClass->SetMaterial("WindMaterial");
+    FirstGreatGrassClass->SetTextureMask("FirstGreatGrassMask");
+    FirstGreatGrassClass->SetMaterialUniforms(StrongWindGrass);
  
 //
   auto FallAltarClass = std::make_unique<Tile>();
@@ -2876,11 +3177,14 @@ class GameStartScene : public Scene{
   
    auto FirstMountainClass = std::make_unique<Tile>();
   FirstMountainClass->SetTexture("FirstMountainTexture");
-     FirstMountainClass->SetMaterial("GrassMaterial");
+    FirstMountainClass->SetTextureMask("FirstMountainMask");
+     FirstMountainClass->SetMaterial("WindMaterial");
+     FirstMountainClass->SetMaterialUniforms(DistantGreatWeakWindGrass);
+
   
       auto ThirdMountainClass = std::make_unique<Tile>();
   ThirdMountainClass->SetTexture("ThirdMountainTexture");
-     ThirdMountainClass->SetMaterial("GrassMaterial");
+     //ThirdMountainClass->SetMaterial("GrassMaterial");
   
   
   
@@ -2892,10 +3196,17 @@ class GameStartScene : public Scene{
 
    auto FirstColinClass = std::make_unique<Tile>();
   FirstColinClass->SetTexture("FirstColinTexture");
+  FirstColinClass->SetTextureMask("FirstColinMask");
+  FirstColinClass->SetMaterial("WindMaterial");
+  FirstColinClass->SetMaterialUniforms(DistantWeakWindGrass);
 
   
    auto SecondColinClass = std::make_unique<Tile>();
   SecondColinClass->SetTexture("SecondColinTexture");
+   SecondColinClass->SetMaterial("WindMaterial");
+   SecondColinClass->SetTextureMask("SecondColinMask");
+      SecondColinClass->SetMaterialUniforms(DistantWeakWindGrass);
+
  
  
 
@@ -3049,7 +3360,7 @@ class GameStartScene : public Scene{
      PlayerH.Value = 128.0f;
      UnitClass PlayerX;
      PlayerX.Unit = UnitType::Pixel;
-     PlayerX.Value = 1.0f;
+     PlayerX.Value = 0.0f;
      UnitClass PlayerY;
      PlayerY.Unit = UnitType::Pixel;
      PlayerY.Value = 0.0f;
@@ -3059,37 +3370,285 @@ class GameStartScene : public Scene{
      PlayerOriginY = OriginClass::Start;
      std::unique_ptr<Component> DioComponentUnique = 
     std::make_unique<Component>("DioComponent", PlayerW, PlayerH, PlayerX, PlayerY,PlayerOriginX,PlayerOriginY);
-     DioComponentUnique->SetTexture("AvoiedDioTexture");
-        DioComponentUnique->SetzIndex(42);
+     DioComponentUnique->SetTexture("AvoiedDioTexture1");
+        DioComponentUnique->SetLayer(42);
         
-   auto DioTestAnimation = std::make_unique<FrameAnimation>();
-   DioTestAnimation->FrameRate = 6;
-   std::vector<std::string> DioTestVectorFrames;
-   DioTestVectorFrames.push_back("AvoiedDioTexture");
-   DioTestVectorFrames.push_back("DioTesteTexture");
-   DioTestAnimation->SetFrames(DioTestVectorFrames);
-   SunCore::instance().FrameAnimations.CreateFrameAnimation("DioTestAnimation",std::move(DioTestAnimation));
-   DioComponentUnique->SetAnimation("DioTestAnimation");
+   auto DioIdleAnimation = std::make_unique<FrameAnimation>();
+   DioIdleAnimation->FrameRate = 4;
+   std::vector<std::string> DioIdleVectorFrames;
+   DioIdleVectorFrames.push_back("AvoiedDioBodyTexture1");
+   DioIdleVectorFrames.push_back("AvoiedDioBodyTexture2");
+      DioIdleVectorFrames.push_back("AvoiedDioBodyTexture3");
+         DioIdleVectorFrames.push_back("AvoiedDioBodyTexture3");
+   DioIdleVectorFrames.push_back("AvoiedDioBodyTexture2");
+      DioIdleVectorFrames.push_back("AvoiedDioBodyTexture1");
+   DioIdleAnimation->SetFrames(DioIdleVectorFrames);
+   SunCore::instance().FrameAnimations.CreateFrameAnimation("DioIdleAnimation",std::move(DioIdleAnimation));
+
+    
+   auto DioIdleHairAnimation = std::make_unique<FrameAnimation>();
+   DioIdleHairAnimation->FrameRate = 4;
+   std::vector<std::string> DioIdleHairVectorFrames;
+   DioIdleHairVectorFrames.push_back("AvoiedDioHairTexture1");
+   DioIdleHairVectorFrames.push_back("AvoiedDioHairTexture2");
+      DioIdleHairVectorFrames.push_back("AvoiedDioHairTexture3");
+         DioIdleHairVectorFrames.push_back("AvoiedDioHairTexture3");
+   DioIdleHairVectorFrames.push_back("AvoiedDioHairTexture2");
+      DioIdleHairVectorFrames.push_back("AvoiedDioHairTexture1");
+   DioIdleHairAnimation->SetFrames(DioIdleHairVectorFrames);
+   SunCore::instance().FrameAnimations.CreateFrameAnimation("DioIdleHairAnimation",std::move(DioIdleHairAnimation));
+
+
+   auto DioIdleHeadAnimation = std::make_unique<FrameAnimation>();
+   DioIdleHeadAnimation->FrameRate = 4;
+   std::vector<std::string> DioIdleHeadVectorFrames;
+   DioIdleHeadVectorFrames.push_back("AvoiedDioHeadTexture1");
+   DioIdleHeadVectorFrames.push_back("AvoiedDioHeadTexture2");
+      DioIdleHeadVectorFrames.push_back("AvoiedDioHeadTexture3");
+      DioIdleHeadVectorFrames.push_back("AvoiedDioHeadTexture2");
+   DioIdleHeadVectorFrames.push_back("AvoiedDioHeadTexture2");
+      DioIdleHeadVectorFrames.push_back("AvoiedDioHeadTexture1");
+   DioIdleHeadAnimation->SetFrames(DioIdleHeadVectorFrames);
+   SunCore::instance().FrameAnimations.CreateFrameAnimation("DioIdleHeadAnimation",std::move(DioIdleHeadAnimation));
+
+
+   auto DioIdleBootsAnimation = std::make_unique<FrameAnimation>();
+   DioIdleBootsAnimation->FrameRate = 4;
+   std::vector<std::string> DioIdleBootsVectorFrames;
+   DioIdleBootsVectorFrames.push_back("AvoiedDioBootsTexture1");
+   DioIdleBootsVectorFrames.push_back("AvoiedDioBootsTexture2");
+   DioIdleBootsVectorFrames.push_back("AvoiedDioBootsTexture3");
+     DioIdleBootsVectorFrames.push_back("AvoiedDioBootsTexture3");
+   DioIdleBootsVectorFrames.push_back("AvoiedDioBootsTexture2");
+   DioIdleBootsVectorFrames.push_back("AvoiedDioBootsTexture1");
+   DioIdleBootsAnimation->SetFrames(DioIdleBootsVectorFrames);
+   SunCore::instance().FrameAnimations.CreateFrameAnimation("DioIdleBootsAnimation",std::move(DioIdleBootsAnimation));
+
+   
+   auto DioIdleFallMarkAnimation = std::make_unique<FrameAnimation>();
+   DioIdleFallMarkAnimation->FrameRate = 4;
+   std::vector<std::string> DioIdleFallMarkVectorFrames;
+   DioIdleFallMarkVectorFrames.push_back("AvoiedDioFallMarkTexture1");
+   DioIdleFallMarkVectorFrames.push_back("AvoiedDioFallMarkTexture2");
+      DioIdleFallMarkVectorFrames.push_back("AvoiedDioFallMarkTexture3");
+         DioIdleFallMarkVectorFrames.push_back("AvoiedDioFallMarkTexture3");
+   DioIdleFallMarkVectorFrames.push_back("AvoiedDioFallMarkTexture2");
+      DioIdleFallMarkVectorFrames.push_back("AvoiedDioFallMarkTexture1");
+   DioIdleFallMarkAnimation->SetFrames(DioIdleFallMarkVectorFrames);
+   SunCore::instance().FrameAnimations.CreateFrameAnimation("DioIdleFallMarkAnimation",std::move(DioIdleFallMarkAnimation));
+
+   
+   
+   auto DioIdleFrontBodyAnimation = std::make_unique<FrameAnimation>();
+   DioIdleFrontBodyAnimation->FrameRate = 4;
+   std::vector<std::string> DioIdleFrontBodyVectorFrames;
+   DioIdleFrontBodyVectorFrames.push_back("AvoiedDioBodyFrontTexture1");
+   DioIdleFrontBodyVectorFrames.push_back("AvoiedDioBodyFrontTexture2");
+      DioIdleFrontBodyVectorFrames.push_back("AvoiedDioBodyFrontTexture3");
+         DioIdleFrontBodyVectorFrames.push_back("AvoiedDioBodyFrontTexture3");
+   DioIdleFrontBodyVectorFrames.push_back("AvoiedDioBodyFrontTexture2");
+      DioIdleFrontBodyVectorFrames.push_back("AvoiedDioBodyFrontTexture1");
+   DioIdleFrontBodyAnimation->SetFrames(DioIdleFrontBodyVectorFrames);
+   SunCore::instance().FrameAnimations.CreateFrameAnimation("DioIdleFrontBodyAnimation",std::move(DioIdleFrontBodyAnimation));
+
+   
+   auto DioIdlePantsAnimation = std::make_unique<FrameAnimation>();
+   DioIdlePantsAnimation->FrameRate = 4;
+   std::vector<std::string> DioIdlePantsVectorFrames;
+   DioIdlePantsVectorFrames.push_back("AvoiedDioPantsTexture1");
+   DioIdlePantsVectorFrames.push_back("AvoiedDioPantsTexture2");
+      DioIdlePantsVectorFrames.push_back("AvoiedDioPantsTexture3");
+       DioIdlePantsVectorFrames.push_back("AvoiedDioPantsTexture3");
+   DioIdlePantsVectorFrames.push_back("AvoiedDioPantsTexture2");
+      DioIdlePantsVectorFrames.push_back("AvoiedDioPantsTexture1");
+   DioIdlePantsAnimation->SetFrames(DioIdlePantsVectorFrames);
+   SunCore::instance().FrameAnimations.CreateFrameAnimation("DioIdlePantsAnimation",std::move(DioIdlePantsAnimation));
+   
+   auto DioIdlePantsBandsAnimation = std::make_unique<FrameAnimation>();
+   DioIdlePantsBandsAnimation->FrameRate = 4;
+   std::vector<std::string> DioIdlePantsBandsVectorFrames;
+   DioIdlePantsBandsVectorFrames.push_back("AvoiedDioPantsBandsTexture1");
+   DioIdlePantsBandsVectorFrames.push_back("AvoiedDioPantsBandsTexture2");
+      DioIdlePantsBandsVectorFrames.push_back("AvoiedDioPantsBandsTexture3");
+         DioIdlePantsBandsVectorFrames.push_back("AvoiedDioPantsBandsTexture3");
+   DioIdlePantsBandsVectorFrames.push_back("AvoiedDioPantsBandsTexture2");
+      DioIdlePantsBandsVectorFrames.push_back("AvoiedDioPantsBandsTexture1");
+   DioIdlePantsBandsAnimation->SetFrames(DioIdlePantsBandsVectorFrames);
+   SunCore::instance().FrameAnimations.CreateFrameAnimation("DioIdlePantsBandsAnimation",std::move(DioIdlePantsBandsAnimation));
+
+   
+
+   auto DioIdleNamelessSwordAnimation = std::make_unique<FrameAnimation>();
+   DioIdleNamelessSwordAnimation->FrameRate = 4;
+   std::vector<std::string> DioIdleNamelessSwordVectorFrames;
+   DioIdleNamelessSwordVectorFrames.push_back("AvoiedDioNamelessSwordTexture1");
+   DioIdleNamelessSwordVectorFrames.push_back("AvoiedDioNamelessSwordTexture2");
+      DioIdleNamelessSwordVectorFrames.push_back("AvoiedDioNamelessSwordTexture3");
+      DioIdleNamelessSwordVectorFrames.push_back("AvoiedDioNamelessSwordTexture3");
+   DioIdleNamelessSwordVectorFrames.push_back("AvoiedDioNamelessSwordTexture2");
+      DioIdleNamelessSwordVectorFrames.push_back("AvoiedDioNamelessSwordTexture1");
+   DioIdleNamelessSwordAnimation->SetFrames(DioIdleNamelessSwordVectorFrames);
+   SunCore::instance().FrameAnimations.CreateFrameAnimation("DioIdleNamelessSwordAnimation",std::move(DioIdleNamelessSwordAnimation));
+
+   
+
+   auto DioIdleTShirtAnimation = std::make_unique<FrameAnimation>();
+   DioIdleTShirtAnimation->FrameRate = 4;
+   std::vector<std::string> DioIdleTShirtVectorFrames;
+   DioIdleTShirtVectorFrames.push_back("AvoiedDioTShirtTexture1");
+   DioIdleTShirtVectorFrames.push_back("AvoiedDioTShirtTexture2");
+      DioIdleTShirtVectorFrames.push_back("AvoiedDioTShirtTexture3");
+         DioIdleTShirtVectorFrames.push_back("AvoiedDioTShirtTexture3");
+   DioIdleTShirtVectorFrames.push_back("AvoiedDioTShirtTexture2");
+      DioIdleTShirtVectorFrames.push_back("AvoiedDioTShirtTexture1");
+   DioIdleTShirtAnimation->SetFrames(DioIdleTShirtVectorFrames);
+   SunCore::instance().FrameAnimations.CreateFrameAnimation("DioIdleTShirtAnimation",std::move(DioIdleTShirtAnimation));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   DioComponentUnique->SetAnimation("DioIdleAnimation");
      SunRendering.AddSprite(std::move(DioComponentUnique),this);
     auto* DioComponent = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get();
-    
- 
+ //DioComponent->SetTextureMask("AvoiedDioWindMask1");
+ //DioComponent->AddMaterial("GrassMaterial");
+// DioComponent->AddMaterialUniforms(DioWindUniforms);
+
+
+   std::unique_ptr<Component> DioComponentHair = 
+    std::make_unique<Component>("DioHair", PlayerW, PlayerH, PlayerX, PlayerY,PlayerOriginX,PlayerOriginY);
+     DioComponentHair->SetTexture("AvoiedDioHairTexture1");
+     DioComponentHair->SetzIndex(10);
+        DioComponentHair->SetAnimation("DioIdleHairAnimation");
+     
+   std::unique_ptr<Component> DioComponentHead = 
+    std::make_unique<Component>("DioHead", PlayerW, PlayerH, PlayerX, PlayerY,PlayerOriginX,PlayerOriginY);
+     DioComponentHead->SetTexture("AvoiedDioHeadTexture1");
+   DioComponentHead->SetzIndex(9);
+   DioComponentHead->SetAnimation("DioIdleHeadAnimation");
+     
+       std::unique_ptr<Component> DioComponentBoots = 
+    std::make_unique<Component>("DioBoots", PlayerW, PlayerH, PlayerX, PlayerY,PlayerOriginX,PlayerOriginY);
+     DioComponentBoots->SetTexture("AvoiedDioBootsTexture1");
+   DioComponentBoots->SetzIndex(1);
+   DioComponentBoots->SetAnimation("DioIdleBootsAnimation");
+     
+       std::unique_ptr<Component> DioComponentFallMark = 
+    std::make_unique<Component>("DioFallMark", PlayerW, PlayerH, PlayerX, PlayerY,PlayerOriginX,PlayerOriginY);
+     DioComponentFallMark->SetTexture("AvoiedDioFallMarkTexture1");
+DioComponentFallMark->SetzIndex(5);
+
+DioComponentFallMark->SetAnimation("DioIdleFallMarkAnimation");
+     
+       std::unique_ptr<Component> DioComponentPants = 
+    std::make_unique<Component>("DioPants", PlayerW, PlayerH, PlayerX, PlayerY,PlayerOriginX,PlayerOriginY);
+     DioComponentPants->SetTexture("AvoiedDioPantsTexture1");
+DioComponentPants->SetzIndex(4);
+     
+      std::unique_ptr<Component> DioComponentPantsBands = 
+    std::make_unique<Component>("DioPantsBands", PlayerW, PlayerH, PlayerX, PlayerY,PlayerOriginX,PlayerOriginY);
+     DioComponentPantsBands->SetTexture("AvoiedDioPantsBandsTexture1");
+DioComponentPantsBands->SetzIndex(5);
+DioComponentPantsBands->SetAnimation("DioIdlePantsBandsAnimation");
+     
+      std::unique_ptr<Component> DioComponentNamelessSword = 
+    std::make_unique<Component>("DioNamelessSword", PlayerW, PlayerH, PlayerX, PlayerY,PlayerOriginX,PlayerOriginY);
+     DioComponentNamelessSword->SetTexture("AvoiedDioNamelessSwordTexture1");
+DioComponentNamelessSword->SetzIndex(1);
+DioComponentNamelessSword->SetAnimation("DioIdleNamelessSwordAnimation");
+     
+  std::unique_ptr<Component> DioComponentFrontBody = 
+    std::make_unique<Component>("DioFrontBody", PlayerW, PlayerH, PlayerX, PlayerY,PlayerOriginX,PlayerOriginY);
+     DioComponentFrontBody->SetTexture("AvoiedDioBodyFrontTexture1");
+DioComponentFrontBody->SetzIndex(7);
+DioComponentFrontBody->SetAnimation("DioIdleFrontBodyAnimation");
+
+       std::unique_ptr<Component> DioComponentTShirt = 
+    std::make_unique<Component>("DioTShirt", PlayerW, PlayerH, PlayerX, PlayerY,PlayerOriginX,PlayerOriginY);
+     DioComponentTShirt->SetTexture("AvoiedDioTShirtTexture1");
+DioComponentTShirt->SetzIndex(6);
+DioComponentTShirt->SetAnimation("DioIdleTShirtAnimation");
+
+ SunRendering.AddSprite(std::move(DioComponentHair),this,SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get());
+    auto* DioHair = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioHair")->second.get();
+     DioHair->SetTextureMask("AvoiedDioWindMask1"); 
+ DioHair->AddMaterial("WindMaterial");
+ DioHair->AddMaterialUniforms(DioHairWindUniforms);
+  
+
+ SunRendering.AddSprite(std::move(DioComponentHead),this,SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get());
+    auto* DioHead = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioHead")->second.get();
+
+
+
+ SunRendering.AddSprite(std::move(DioComponentBoots),this,SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get());
+    auto* DioBoots = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioBoots")->second.get();
+
+
+
+ SunRendering.AddSprite(std::move(DioComponentTShirt),this,SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get());
+    auto* DioTShirt = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioTShirt")->second.get();
+      DioTShirt->SetTextureMask("AvoiedDioWindMask1"); 
+ DioTShirt->AddMaterial("WindMaterial");
+ DioTShirt->AddMaterialUniforms(DioTShirtWindUniforms);
+
+ SunRendering.AddSprite(std::move(DioComponentPants),this,SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get());
+    auto* DioPants = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioPants")->second.get();
+  DioPants->SetTextureMask("AvoiedDioWindMask1"); 
+ DioPants->AddMaterial("WindMaterial");
+ DioPants->AddMaterialUniforms(DioPantsWindUniforms);
+ SunRendering.AddSprite(std::move(DioComponentPantsBands),this,SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get());
+    auto* DioPantsBands = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioPantsBands")->second.get();
+DioPantsBands->SetTextureMask("AvoiedDioWindMask1Bands"); 
+ DioPantsBands->AddMaterial("WindMaterial");
+DioPantsBands->AddMaterialUniforms(DioBandsWindUniforms);
+ SunRendering.AddSprite(std::move(DioComponentFallMark),this,SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get());
+    auto* DioFallMark = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioFallMark")->second.get();
+ DioFallMark->AddMaterial("FallMarkMaterial");
+     SunRendering.AddSprite(std::move(DioComponentNamelessSword),this,SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get());
+    auto* DioNamelessSword = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioNamelessSword")->second.get();
+       DioNamelessSword->SetTextureMask("AvoiedDioWindMask1NamelessSword"); 
+ DioNamelessSword->AddMaterial("WindMaterial");
+DioNamelessSword->AddMaterialUniforms(DioNamelessSwordWindUniforms);
+
+    SunRendering.AddSprite(std::move(DioComponentFrontBody),this,SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioComponent")->second.get());
+    auto* DioFrontBody = SunCore::instance().SunWorld.GetWorldComponentsMap().find("DioFrontBody")->second.get();
+
+
+
+
+
+
+
+
+
+
       
      PlayerAttributesClass DioAttributes;
      DioAttributes.WalkSpeedX = 1.0f;
      
 
-  Player* Dio = new Player(DioComponent,DioAttributes);
+   Dio = new Player(DioComponent,DioAttributes);
+   auto DioRef = Dio;
      
      struct MoveLeft : Ability{
       public:
     void Activate(Player& Player)override{
-       BodyArcadePhysic Physic;
-     vector2 ActualVelocity = Physic.GetVelocity();
-     vector2 Velocity;
-     Velocity.y = 0.0f;
-     Velocity.x = -500.0f; 
-       Player.PlayerComponent->ApplyForce(Velocity);
+     Player.State = PlayerStates::WalkLeft;
     }
     
 };
@@ -3104,7 +3663,7 @@ Dio->Abilities.push_back(std::make_unique<MoveLeft>());
       DioMoveRightTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyHeld,KeyCodes::D);
      DioMoveRightListener->Trigger = DioMoveRightTrigger;
      DioMoveRightListener->UseFn = true;
-     DioMoveRightListener->Fn = [Dio](SunEvent& e){
+     DioMoveRightListener->Fn = [DioRef](SunEvent& e){
      Dio->UseAbility(1);
      };
      
@@ -3129,7 +3688,7 @@ Dio->Abilities.push_back(std::make_unique<MoveLeft>());
      DioMoveLeftTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyHeld,KeyCodes::A);
      DioMoveLeftListener->Trigger = DioMoveLeftTrigger;
      DioMoveLeftListener->UseFn = true;
-     DioMoveLeftListener->Fn = [Dio](SunEvent& e){
+     DioMoveLeftListener->Fn = [DioRef](SunEvent& e){
      Dio->UseAbility(0);
      };
      SunListenersControl.AddListener(std::move(DioMoveLeftListener));
@@ -3154,7 +3713,7 @@ Dio->Abilities.push_back(std::make_unique<MoveLeft>());
       DioMoveDownTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyHeld,KeyCodes::S);
      DioMoveDownListener->Trigger = DioMoveDownTrigger;
      DioMoveDownListener->UseFn = true;
-     DioMoveDownListener->Fn = [Dio](SunEvent& e){
+     DioMoveDownListener->Fn = [DioRef](SunEvent& e){
      Dio->UseAbility(2);
      };
      SunListenersControl.AddListener(std::move(DioMoveDownListener));
@@ -3179,7 +3738,7 @@ Dio->Abilities.push_back(std::make_unique<MoveLeft>());
      DioMoveUpTrigger.SetKeyboardTrigger(KeyboardTriggersType::KeyHeld,KeyCodes::W);
      DioMoveUpListener->Trigger = DioMoveUpTrigger;
      DioMoveUpListener->UseFn = true;
-     DioMoveUpListener->Fn = [Dio](SunEvent& e){
+     DioMoveUpListener->Fn = [DioRef](SunEvent& e){
      Dio->UseAbility(3);
      };
      SunListenersControl.AddListener(std::move(DioMoveUpListener));
@@ -3211,15 +3770,24 @@ Dio->Abilities.push_back(std::make_unique<MoveLeft>());
     SunCore::instance().Camera.SetSmmoth(0.06);
 
 
+
+
     }
 
     void OnUpdate() override{
 
+       
+      if(!VerifyKeyHeld(KeyCodes::A) && !VerifyKeyHeld(KeyCodes::D)){
+        Dio->State = PlayerStates::Idle;
+      }
+
+      Dio->Update();
     }
   };
 
 
 
+  
 
 
 
